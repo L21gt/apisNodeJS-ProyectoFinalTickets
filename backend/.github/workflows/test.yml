@@ -1,0 +1,60 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: ["main", "master"]
+  pull_request:
+    branches: ["main", "master"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    # SERVICIO: GitHub encenderá esto automáticamente para los tests
+    services:
+      postgres:
+        image: postgres:latest
+        env:
+          POSTGRES_DB: events4u_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+        ports:
+          - 5432:5432
+        # Esperar a que la DB esté lista antes de correr tests
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd backend
+          npm ci
+
+      - name: Run Tests with Coverage
+        env:
+          # Credenciales que coinciden con el servicio de arriba
+          NODE_ENV: test
+          JWT_SECRET: secreto_temporal_ci
+          DATABASE_URL: postgres://postgres:password@localhost:5432/events4u_test
+          # Variables Dummy para Cloudinary (los tests usan mocks o fallan controladamente)
+          CLOUDINARY_CLOUD_NAME: dummy
+          CLOUDINARY_API_KEY: dummy
+          CLOUDINARY_API_SECRET: dummy
+          ADMIN_EMAIL: admin@test.com
+          ADMIN_PASSWORD: pass
+        run: |
+          cd backend
+          npm run test:coverage

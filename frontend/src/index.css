@@ -1,0 +1,215 @@
+:root {
+  /* === PALETA DE COLORES (Basada en tu imagen) === */
+  --color-yale-blue: #1B4079;    /* Primario: Azul Profundo */
+  --color-air-force: #4D7C8A;    /* Secundario: Azul Grisáceo */
+  --color-cambridge: #7F9C96;    /* Acento 1: Verde Azulado */
+  --color-sage: #8FAD88;         /* Acento 2: Verde Salvia (Éxito/Suave) */
+  --color-mindaro: #CBDF90;      /* Resaltado: Lima Suave (Botones de acción/Hover) */
+
+  /* === ASIGNACIÓN DE ROLES === */
+  --primary-color: var(--color-yale-blue);
+  --secondary-color: var(--color-air-force);
+  --bg-light: #f4f7f6; /* Fondo general: Blanco roto con tinte verdoso muy suave */
+  --text-main: #1B4079; /* Texto principal: Azul oscuro (más elegante que negro) */
+}
+
+body {
+  background-color: var(--bg-light);
+  color: var(--text-main);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* === SOBREESCRIBIR BOOTSTRAP === */
+
+/* Navbar Personalizado */
+.navbar-custom {
+  background-color: var(--primary-color) !important;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Botones Primarios (Azul Yale) */
+.btn-primary {
+  background-color: var(--primary-color);
+  border-color: var(--primary-color);
+}
+.btn-primary:hover, .btn-primary:active, .btn-primary:focus {
+  background-color: var(--color-air-force) !important;
+  border-color: var(--color-air-force) !important;
+}
+
+/* Botones Secundarios (Verde Salvia) */
+.btn-secondary {
+  background-color: var(--color-sage);
+  border-color: var(--color-sage);
+  color: white;
+}
+.btn-secondary:hover {
+  background-color: var(--color-cambridge);
+  border-color: var(--color-cambridge);
+}
+
+/* Enlaces Generales */
+a {
+  color: var(--color-air-force);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+a:hover {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+/* Tarjetas (Cards) */
+.card {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(27, 64, 121, 0.05); /* Sombra azulada muy suave */
+  background-color: white;
+}
+
+/* === CLASES DE UTILIDAD PERSONALIZADAS === */
+/* Úsalas para colorear textos y fondos sin escribir CSS nuevo */
+
+/* Textos */
+.text-primary-custom { color: var(--primary-color) !important; }
+.text-secondary-custom { color: var(--secondary-color) !important; }
+.text-accent { color: var(--color-sage) !important; }
+
+/* Fondos */
+.bg-primary-custom { background-color: var(--primary-color) !important; }
+.bg-secondary-custom { background-color: var(--secondary-color) !important; }
+.bg-accent { background-color: var(--color-mindaro) !important; }
+
+/* Fondo con Gradiente (Para el Hero Section del Home) */
+.bg-gradient-custom {
+  background-color: var(--primary-color);
+  background-image: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+}
+
+/* Bordes */
+.border-primary-custom { border-color: var(--primary-color) !important; }
+.border-bottom-custom { border-bottom: 2px solid var(--secondary-color) !important; }
+
+/* === COMPONENTES ESPECÍFICOS === */
+
+/* Efecto Hover para las Tarjetas de Eventos */
+.transition-hover { transition: transform 0.2s ease-in-out; }
+.transition-hover:hover { transform: translateY(-5px); }
+
+/* Imagen en las Tarjetas del Home */
+.img-card-custom {
+  width: 100%;           
+  height: 200px;         /* Mantenemos la altura fija para que la cuadrícula no se rompa */
+  object-fit: contain;   /* Muestra la imagen COMPLETA sin cortar nada */
+  background-color: #ffffff; /* Fondo blanco para rellenar los espacios que sobren a los lados */
+  padding: 10px;         /* Un poco de margen interno para que la imagen no pegue con los bordes */
+  object-position: center;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  border-bottom: 1px solid #eee; /* Una línea sutil para separar la imagen blanca del cuerpo de la tarjeta */
+}
+
+/* Botones de Acento (Ej: Botón Register del Navbar) */
+.btn-accent-custom {
+  background-color: var(--color-mindaro) !important;
+  border-color: var(--color-mindaro) !important;
+  color: #000 !important;
+  font-weight: bold !important;
+}
+.btn-accent-custom:hover {
+  filter: brightness(0.95);
+}
+
+/* === ADMIN PANEL === */
+
+/* Barra Lateral (Sidebar) */
+.sidebar-custom {
+  background-color: var(--primary-color);
+  min-height: 80vh;
+  border-radius: 10px;
+}
+
+/* Enlaces del Menú Admin */
+.nav-pills .nav-link-custom {
+  color: white;
+  text-align: left;
+  width: 100%;
+  border-radius: 6px;
+  margin-bottom: 5px;
+  transition: all 0.2s;
+}
+
+.nav-pills .nav-link-custom:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+/* Enlace Activo del Menú Admin */
+.nav-pills .nav-link-custom.active {
+  background-color: var(--color-mindaro) !important;
+  color: #000 !important;
+  font-weight: bold !important;
+}
+
+/* Miniaturas de imágenes en tablas */
+.img-thumbnail-custom {
+  width: 50px;
+  height: 50px;
+  object-fit: cover;     /* Evita que se vea aplastada */
+  border-radius: 6px;
+  display: block;        /* Ayuda a evitar espacios extraños en tablas */
+}
+
+/* === MODALES === */
+/* Fondo oscuro semitransparente para modales */
+.modal-overlay-custom {
+  background-color: rgba(0,0,0,0.5) !important; /* Fondo oscuro */
+}
+
+/* Para la Página de Detalle (Imagen Grande) */
+.img-detail-main {
+  width: 100%;
+  height: 400px;         /* Mantenemos la altura del banner */
+  object-fit: contain;   /* Muestra la imagen COMPLETA */
+  object-position: center;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background-color: #f8f9fa; /* Un gris muy suave de fondo para los espacios vacíos */
+  box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+}
+
+/* Para ver la imagen COMPLETA en el detalle (sin recortar nada),
+   aunque queden espacios vacíos a los lados, usa esta clase en su lugar: */
+.img-detail-contain {
+  width: 100%;
+  max-height: 500px;     /* No fuerza altura fija, solo un máximo */
+  object-fit: contain;   /* Muestra la imagen entera sin recortar */
+  background-color: #f0f0f0; /* Fondo suave para los espacios vacíos */
+  border-radius: 12px;
+}
+
+
+/* === ADMIN INBOX === */
+
+/* Anchos de columnas específicos para que la tabla no baile */
+.col-date { width: 15%; }
+.col-sender { width: 20%; }
+.col-subject { width: 20%; }
+.col-message { 
+  width: 25%; 
+  max-width: 200px; /* Necesario para que el texto se corte con ... */
+}
+
+/* Fondo para mensajes nuevos (Un azul muy pálido para resaltar) */
+.bg-message-new { 
+  background-color: #f0f7ff !important; 
+}
+
+/* Fondo para mensajes leídos (Gris más notorio) */
+.bg-message-read,
+.bg-message-read > td {
+  background-color: #e2e3e5 !important; /* Gris más visible */
+  --bs-table-bg: #e2e3e5 !important;     /* Variable de Bootstrap */
+  --bs-table-accent-bg: #e2e3e5 !important; /* Variable de acento */
+}
