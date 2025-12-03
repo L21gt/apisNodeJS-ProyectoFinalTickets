@@ -45,7 +45,7 @@ jobs:
         env:
           NODE_ENV: test
           JWT_SECRET: secreto_temporal_ci
-          DATABASE_URL: postgres://postgres:password@localhost:5432/events4u_test
+          TEST_DATABASE_URL: postgres://postgres:password@localhost:5432/events4u_test
           CLOUDINARY_CLOUD_NAME: dummy
           CLOUDINARY_API_KEY: dummy
           CLOUDINARY_API_SECRET: dummy
