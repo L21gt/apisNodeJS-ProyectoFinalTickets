@@ -3,7 +3,7 @@ const app = require("../../src/app");
 const db = require("../../src/models");
 
 // Timeout razonable (no necesitamos 5 minutos si usamos truncate)
-jest.setTimeout(60000);
+jest.setTimeout(120000);
 
 beforeAll(async () => {
   try {

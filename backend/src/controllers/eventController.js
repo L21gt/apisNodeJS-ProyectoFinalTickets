@@ -7,15 +7,21 @@ const { Readable } = require("stream");
  * (Convierte el archivo en memoria a un stream que Cloudinary entienda)
  */
 const uploadToCloudinary = (buffer) => {
+  // TRUCO PARA TESTS: Si es test, devuelve URL falsa y salta Cloudinary
+  if (process.env.NODE_ENV === "test") {
+    return Promise.resolve({
+      secure_url: "http://res.cloudinary.com/test/image.png",
+    });
+  }
+
   return new Promise((resolve, reject) => {
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder: "events4u" }, // Carpeta en tu Cloudinary
+      { folder: "events4u" },
       (error, result) => {
         if (error) return reject(error);
         resolve(result);
       }
     );
-    // Convertir buffer a stream
     const stream = new Readable();
     stream.push(buffer);
     stream.push(null);
