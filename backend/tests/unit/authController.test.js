@@ -1,4 +1,3 @@
-// CORRECCIÓN DE RUTAS: Agregamos 'src' para encontrar los archivos
 const authController = require("../../src/controllers/authController");
 const { User } = require("../../src/models");
 const jwt = require("jsonwebtoken");
@@ -114,5 +113,25 @@ describe("Auth Controller - Unit Tests", () => {
 
     await authController.login(req, res);
     expect(res.statusCode).toBe(401);
+  });
+
+  /* -------------------------------------------------------------------------- */
+  /* TEST DE UPDATE PROFILE                             */
+  /* -------------------------------------------------------------------------- */
+  test("Update Profile - Success", async () => {
+    req.user = { id: 1 }; // Simular usuario logueado
+    req.body = { firstName: "NewName" };
+
+    const mockUser = {
+      id: 1,
+      firstName: "OldName",
+      save: jest.fn(),
+    };
+    User.findByPk.mockResolvedValue(mockUser); // Simular que encuentra al usuario
+
+    await authController.updateProfile(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(mockUser.firstName).toBe("NewName");
   });
 });

@@ -89,4 +89,14 @@ describe("Event Routes Coverage Tests", () => {
 
     expect(res.statusCode).toBe(404);
   });
+
+  test("PUT /api/events/:id - Update Event Name", async () => {
+    const res = await request(app)
+      .put(`/api/events/${eventId}`) // Usamos el ID del evento creado antes
+      .set("Authorization", `Bearer ${adminToken}`)
+      .field("title", "Updated Event Title");
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.event.title).toBe("Updated Event Title");
+  });
 });
