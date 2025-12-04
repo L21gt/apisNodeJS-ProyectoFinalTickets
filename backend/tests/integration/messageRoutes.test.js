@@ -2,7 +2,11 @@ const request = require("supertest");
 const app = require("../../src/app");
 const db = require("../../src/models");
 
+// Timeout generoso por si acaso
+jest.setTimeout(30000);
+
 beforeAll(async () => {
+  // Usamos sync force: true para este test aislado para asegurar IDs limpios
   await db.sequelize.sync({ force: true });
 });
 
@@ -13,10 +17,10 @@ afterAll(async () => {
 describe("Message Routes Integration Tests", () => {
   let adminToken;
   let userToken;
-  let messageId;
+  let messageId; // Variable para guardar el ID real
 
   beforeAll(async () => {
-    // Create Admin
+    // Crear Admin
     const admin = await db.User.create({
       firstName: "Admin",
       lastName: "Msg",
@@ -30,7 +34,7 @@ describe("Message Routes Integration Tests", () => {
       process.env.JWT_SECRET
     );
 
-    // Create User (for security check)
+    // Crear Usuario (para probar seguridad)
     const user = await db.User.create({
       firstName: "User",
       lastName: "Msg",
@@ -53,7 +57,7 @@ describe("Message Routes Integration Tests", () => {
     });
 
     expect(res.statusCode).toBe(201);
-    messageId = 1; // Assuming it's the first message
+    // Nota: El endpoint no devuelve el ID, así que lo capturaremos en el siguiente test (GET)
   });
 
   test("GET /api/messages - Admin can read messages", async () => {
@@ -62,8 +66,13 @@ describe("Message Routes Integration Tests", () => {
       .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThan(0);
-    expect(res.body[0].subject).toBe("Inquiry");
+
+    // Acceder a .messages porque ahora hay paginación
+    expect(res.body.messages.length).toBeGreaterThan(0);
+    expect(res.body.messages[0].subject).toBe("Inquiry");
+
+    // Capturar el ID real dinámicamente
+    messageId = res.body.messages[0].id;
   });
 
   test("GET /api/messages - Regular user CANNOT read messages (403)", async () => {
@@ -75,6 +84,7 @@ describe("Message Routes Integration Tests", () => {
   });
 
   test("PUT /api/messages/:id/status - Admin can update status", async () => {
+    // Usamos la variable messageId que capturamos arriba
     const res = await request(app)
       .put(`/api/messages/${messageId}/status`)
       .set("Authorization", `Bearer ${adminToken}`)
@@ -90,5 +100,13 @@ describe("Message Routes Integration Tests", () => {
       .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.statusCode).toBe(200);
+  });
+
+  test("DELETE /api/messages/:id - Not Found (404)", async () => {
+    const res = await request(app)
+      .delete("/api/messages/999999") // ID que no existe
+      .set("Authorization", `Bearer ${adminToken}`);
+
+    expect(res.statusCode).toBe(404);
   });
 });

@@ -1,6 +1,7 @@
 const { Event, Category } = require("../models");
 const cloudinary = require("../config/cloudinary");
 const { Readable } = require("stream");
+const { Op } = require("sequelize");
 
 /**
  * Función auxiliar para subir un buffer a Cloudinary
@@ -83,21 +84,46 @@ exports.createEvent = async (req, res) => {
 };
 
 /**
- * Listar todos los eventos (Público).
- * Incluye paginación y filtrado básico.
+ * Listar eventos con filtros de Servidor (Búsqueda, Categoría, Fecha)
  * @route GET /api/events
  */
 exports.getAllEvents = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 9; // 9 por página para el grid 3x3
     const offset = (page - 1) * limit;
 
+    // Extraemos los nuevos filtros
+    const { type, category, search } = req.query;
+
+    const whereClause = {};
+
+    // 1. Filtro de Fecha (Upcoming / Past)
+    if (type === "upcoming") {
+      whereClause.date = { [Op.gte]: new Date() };
+    } else if (type === "past") {
+      whereClause.date = { [Op.lt]: new Date() };
+    }
+
+    // 2. Filtro de Categoría (Backend)
+    if (category) {
+      whereClause.categoryId = category;
+    }
+
+    // 3. Filtro de Búsqueda (Título o Ubicación)
+    if (search) {
+      whereClause[Op.or] = [
+        { title: { [Op.iLike]: `%${search}%` } }, // iLike es insensible a mayúsculas (Postgres)
+        { location: { [Op.iLike]: `%${search}%` } },
+      ];
+    }
+
     const { count, rows } = await Event.findAndCountAll({
+      where: whereClause, // Aplicamos todos los filtros aquí
       limit,
       offset,
-      order: [["date", "ASC"]], // Los eventos más próximos primero
-      include: [{ model: Category, attributes: ["name"] }], // Traer el nombre de la categoría
+      order: [["date", "ASC"]],
+      include: [{ model: Category, attributes: ["name"] }],
     });
 
     res.status(200).json({

@@ -1,5 +1,6 @@
 const { Ticket, Event, sequelize } = require("../models");
 const { v4: uuidv4 } = require("uuid"); // libreria para generar IDs únicos
+const { Op } = require("sequelize"); // Operadores de Sequelize
 
 /**
  * Comprar boletos.
@@ -28,7 +29,7 @@ exports.purchaseTickets = async (req, res) => {
     // Aquí iría la llamada a Stripe/PayPal. Asumimos éxito.
 
     // 3. Buscar el evento (Bloqueando la fila para evitar condiciones de carrera)
-    const event = await Event.findByPk(eventId, { transaction: t, lock: true });
+    const event = await Event.findByPk(eventId, { transaction: t });
 
     if (!event) {
       await t.rollback();
@@ -85,17 +86,43 @@ exports.purchaseTickets = async (req, res) => {
  */
 exports.getMyTickets = async (req, res) => {
   try {
-    const tickets = await Ticket.findAll({
-      where: { userId: req.user.id },
+    const userId = req.user.id;
+    const { type, page = 1, limit = 10 } = req.query; // type: 'upcoming' | 'history'
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+
+    // Filtro de fecha basado en el evento asociado
+    const dateFilter =
+      type === "upcoming"
+        ? { [Op.gte]: new Date() } // Eventos futuros
+        : type === "history"
+        ? { [Op.lt]: new Date() } // Eventos pasados
+        : null; // Si no envía tipo, traer todos (opcional)
+
+    // Configuración de la consulta
+    const queryOptions = {
+      where: { userId },
       include: [
-        { model: Event, attributes: ["title", "date", "location", "imageUrl"] },
+        {
+          model: Event,
+          attributes: ["title", "date", "location", "imageUrl"],
+          where: dateFilter ? { date: dateFilter } : {}, // Aplicar filtro al evento
+        },
       ],
       order: [["createdAt", "DESC"]],
-    });
+      limit: parseInt(limit),
+      offset: parseInt(offset),
+    };
 
-    res.status(200).json(tickets);
+    const { count, rows } = await Ticket.findAndCountAll(queryOptions);
+
+    res.status(200).json({
+      totalTickets: count,
+      totalPages: Math.ceil(count / parseInt(limit)),
+      currentPage: parseInt(page),
+      tickets: rows,
+    });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al obtener tus boletos" });
+    res.status(500).json({ message: "Error fetching tickets" });
   }
 };

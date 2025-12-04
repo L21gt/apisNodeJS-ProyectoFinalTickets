@@ -4,14 +4,20 @@ import { toast } from 'react-toastify';
 
 const AdminInbox = () => {
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Aquí declaramos la variable
+  
+  // Paginación
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // SOLUCIÓN ERROR 1: Definimos la carga DENTRO del useEffect
   useEffect(() => {
     const loadMessages = async () => {
+      setLoading(true);
       try {
-        const data = await messageService.getAllMessages();
-        setMessages(data || []);
+        const data = await messageService.getAllMessages(page, 10);
+        setMessages(data.messages || []);
+        setTotalPages(data.totalPages || 1);
         setLoading(false);
       } catch (error) {
         console.error(error);
@@ -20,47 +26,45 @@ const AdminInbox = () => {
       }
     };
     loadMessages();
-  }, []);
+  }, [page, refreshKey]);
 
-  // Cambiar estado (Leído <-> Nuevo)
   const toggleStatus = async (msg) => {
     const newStatus = msg.status === 'new' ? 'read' : 'new';
     try {
-      // Actualización optimista (UI primero)
-      setMessages(prev => prev.map(m => m.id === msg.id ? { ...m, status: newStatus } : m));
-      
       await messageService.updateStatus(msg.id, newStatus);
-      toast.success(newStatus === 'read' ? 'Message marked as read' : 'Message marked as unread');
+      toast.success(`Message marked as ${newStatus}`);
+      setRefreshKey(old => old + 1);
     } catch (error) {
       console.error(error);
       toast.error('Error updating status');
-      // Si falla, podrías recargar la lista aquí, pero por simplicidad lo dejamos así
     }
   };
 
-  // Eliminar mensaje
   const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this message?')) return;
-
+    if (!window.confirm('Are you sure?')) return;
     try {
       await messageService.deleteMessage(id);
-      setMessages(prev => prev.filter(m => m.id !== id));
       toast.success('Message deleted');
+      setRefreshKey(old => old + 1);
     } catch (error) {
       console.error(error);
-      toast.error('Error deleting message');
+      toast.error('Error deleting');
     }
   };
 
   const newMessages = messages.filter(m => m.status === 'new');
   const readMessages = messages.filter(m => m.status === 'read');
 
-  if (loading) return <div className="text-center p-5">Loading inbox...</div>;
+  // --- Usamos la variable 'loading' ---
+  if (loading) {
+    return <div className="text-center p-5">Loading inbox...</div>;
+  }
+  // -----------------------------------------------------
 
   return (
     <div className="card shadow-sm border-0">
-      <div className="card-header bg-white py-3">
-        <h5 className="mb-0 fw-bold text-secondary-custom">Inbox</h5>
+      <div className="card-header bg-white py-3 d-flex justify-content-between">
+        <h5 className="mb-0 fw-bold text-secondary-custom">Inbox (Page {page})</h5>
       </div>
       
       <div className="card-body p-0">
@@ -77,7 +81,7 @@ const AdminInbox = () => {
             </thead>
             <tbody>
               
-              {/* SECCIÓN: NUEVOS MENSAJES */}
+              {/* NEW MESSAGES SECTION */}
               {newMessages.length > 0 && (
                 <tr className="bg-light">
                   <td colSpan="5" className="fw-bold text-primary-custom ps-4 py-2 border-bottom-0">
@@ -87,19 +91,17 @@ const AdminInbox = () => {
               )}
               
               {newMessages.map((msg) => (
-                // LIMPIEZA: Usamos clase CSS .bg-message-new
                 <tr key={msg.id} className="bg-message-new">
-                  <td className="ps-4 text-muted small">
+                  <td className="ps-4 small">
                     {new Date(msg.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="fw-bold">
+                  <td>
                     {msg.name}<br/>
-                    <span className="small text-muted fw-normal">{msg.email}</span>
+                    <span className="small fw-normal opacity-75">{msg.email}</span>
                   </td>
                   <td className="fw-bold text-primary-custom">
                     {msg.subject}
                   </td>
-                  {/* Quitamos el style duplicado y usamos clase */}
                   <td className="text-truncate col-message">
                     {msg.message}
                   </td>
@@ -107,9 +109,9 @@ const AdminInbox = () => {
                     <button 
                       onClick={() => toggleStatus(msg)} 
                       className="btn btn-sm btn-outline-success me-2"
-                      title="Mark as read"
+                      title="Mark as Read"
                     >
-                      ✔ Read
+                      ✔
                     </button>
                     <button 
                       onClick={() => handleDelete(msg.id)}
@@ -121,11 +123,11 @@ const AdminInbox = () => {
                 </tr>
               ))}
 
-              {/* SECCIÓN: MENSAJES LEÍDOS */}
+              {/* READ MESSAGES SECTION */}
               {readMessages.length > 0 && (
                 <tr className="bg-light">
                   <td colSpan="5" className="fw-bold text-secondary-custom ps-4 py-2 border-bottom-0 mt-3">
-                    📂 Messages Read
+                    📂 Read Messages
                   </td>
                 </tr>
               )}
@@ -140,9 +142,9 @@ const AdminInbox = () => {
                     <button 
                       onClick={() => toggleStatus(msg)} 
                       className="btn btn-sm btn-link text-decoration-none text-secondary me-2"
-                      title="Mark as unread"
+                      title="Mark as Unread"
                     >
-                      ↩ Unread
+                      ↩
                     </button>
                     <button 
                       onClick={() => handleDelete(msg.id)}
@@ -157,7 +159,7 @@ const AdminInbox = () => {
               {messages.length === 0 && (
                 <tr>
                   <td colSpan="5" className="text-center py-5 text-muted">
-                    There are no messages in the inbox.
+                    Inbox is empty.
                   </td>
                 </tr>
               )}
@@ -165,6 +167,13 @@ const AdminInbox = () => {
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* PAGINACION */}
+      <div className="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+        <button className="btn btn-outline-secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>&laquo; Prev</button>
+        <span className="text-muted small">Page <strong>{page}</strong> of <strong>{totalPages}</strong></span>
+        <button className="btn btn-outline-secondary" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next &raquo;</button>
       </div>
     </div>
   );

@@ -68,4 +68,22 @@ describe("User Routes Integration Tests", () => {
     expect(res.statusCode).toBe(200);
     expect(res.body.user.role).toBe("admin");
   });
+
+  test("PUT /api/users/:id - Admin CANNOT block themselves (400)", async () => {
+    // Obtenemos el ID del admin desde el token decodificado o usándolo si lo guardaste en una variable
+    // En este test setup, sabemos que creamos al admin primero.
+    // Vamos a intentar bloquear al usuario que tiene el token de admin.
+
+    // Primero averiguamos el ID del admin (buscándolo por email)
+    const adminUser = await db.User.findOne({
+      where: { email: "admin@users.com" },
+    });
+
+    const res = await request(app)
+      .put(`/api/users/${adminUser.id}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ status: "blocked" });
+
+    expect(res.statusCode).toBe(400); // "No puedes modificar tu propio usuario"
+  });
 });

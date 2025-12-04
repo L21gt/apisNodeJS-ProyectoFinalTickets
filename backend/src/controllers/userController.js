@@ -1,33 +1,50 @@
-const { User } = require('../models');
+const { User } = require("../models");
 
 /**
- * Obtener lista de usuarios (Solo Admin).
- * Soporta paginación simple.
+ * Obtener lista de usuarios con filtros y paginación
+ * @route GET /api/users?page=1&limit=10&role=admin&status=active
  */
 exports.getAllUsers = async (req, res) => {
   try {
-    // Paginación: pagina 1 por defecto, 10 usuarios por pagina
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const offset = (page - 1) * limit;
 
+    // Extraer filtros de la URL
+    const { role, status, search } = req.query;
+
+    const whereClause = {};
+
+    // Aplicar filtro de Rol si existe
+    if (role && role !== "") {
+      whereClause.role = role;
+    }
+
+    // Aplicar filtro de Estado si existe
+    if (status && status !== "") {
+      whereClause.status = status;
+    }
+
+    // Opcional: Búsqueda por nombre o email (si quisieras agregarlo a futuro)
+    // if (search) { ... }
+
     const { count, rows } = await User.findAndCountAll({
-      attributes: { exclude: ['password'] }, // ¡Importante! Nunca devolver passwords
+      where: whereClause,
+      attributes: { exclude: ["password"] },
       limit: limit,
       offset: offset,
-      order: [['createdAt', 'DESC']]
+      order: [["createdAt", "DESC"]],
     });
 
     res.status(200).json({
       totalUsers: count,
       totalPages: Math.ceil(count / limit),
       currentPage: page,
-      users: rows
+      users: rows,
     });
-
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error al obtener usuarios' });
+    res.status(500).json({ message: "Error al obtener usuarios" });
   }
 };
 
@@ -42,12 +59,14 @@ exports.updateUser = async (req, res) => {
     const user = await User.findByPk(id);
 
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      return res.status(404).json({ message: "Usuario no encontrado" });
     }
 
     // Evitar que un admin se bloquee a sí mismo o se quite permisos
     if (user.id === req.user.id) {
-       return res.status(400).json({ message: 'No puedes modificar tu propio usuario.' });
+      return res
+        .status(400)
+        .json({ message: "No puedes modificar tu propio usuario." });
     }
 
     // Actualizar campos
@@ -56,10 +75,11 @@ exports.updateUser = async (req, res) => {
 
     await user.save();
 
-    res.status(200).json({ message: 'Usuario actualizado correctamente', user });
-
+    res
+      .status(200)
+      .json({ message: "Usuario actualizado correctamente", user });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Error al actualizar usuario' });
+    res.status(500).json({ message: "Error al actualizar usuario" });
   }
 };

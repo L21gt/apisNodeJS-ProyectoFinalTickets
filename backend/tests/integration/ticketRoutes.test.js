@@ -2,67 +2,113 @@ const request = require("supertest");
 const app = require("../../src/app");
 const db = require("../../src/models");
 
-// Timeout EXTREMO para que no falle por tiempo
+// Timeout extendido para entornos Windows/Docker (2 minutos)
 jest.setTimeout(120000);
 
 beforeAll(async () => {
-  // Solo sincronizamos, NO borramos ni recreamos (más rápido y seguro)
-  await db.sequelize.sync({ force: false });
+  try {
+    // 1. Asegurar que las tablas existan sin borrarlas (Rápido)
+    await db.sequelize.sync({ force: false });
+
+    // 2. Limpieza segura de datos (Evita deadlocks de TRUNCATE)
+    // Orden específico: Hijos -> Padres
+    await db.Ticket.destroy({ where: {} });
+    await db.Event.destroy({ where: {} });
+    await db.User.destroy({ where: {} });
+    await db.Category.destroy({ where: {} });
+  } catch (error) {
+    console.error("Error en limpieza de DB:", error);
+  }
 });
 
-afterAll(async () => {
-  // Forzamos el cierre inmediato
-  await db.sequelize.close();
-});
+// afterAll(async () => {
+//   // Intentamos cerrar la conexión limpiamente
+//   try {
+//     db.sequelize.close();
+//   } catch (error) {
+//     // Si falla al cerrar, ignoramos porque --forceExit se encargará
+//   }
+// });
 
-describe("Ticket Routes Tests", () => {
+describe("Ticket Routes Coverage Tests", () => {
   let userToken;
   let eventId;
 
-  // Creamos datos con nombres aleatorios para no chocar con otros tests
-  const randomSuffix = Math.floor(Math.random() * 10000);
-
   beforeAll(async () => {
-    try {
-      const user = await db.User.create({
-        firstName: "Ticket",
-        lastName: "Buyer",
-        email: `buyer${randomSuffix}@test.com`, // Email único
-        password: "pass",
-        role: "user",
-      });
-      const jwt = require("jsonwebtoken");
-      userToken = jwt.sign(
-        { id: user.id, role: user.role },
-        process.env.JWT_SECRET
-      );
+    // Setup: Crear Usuario, Categoría y Evento
+    const user = await db.User.create({
+      firstName: "Ticket",
+      lastName: "Buyer",
+      email: "buyer_final@test.com",
+      password: "pass",
+      role: "user",
+    });
+    const jwt = require("jsonwebtoken");
+    userToken = jwt.sign(
+      { id: user.id, role: user.role },
+      process.env.JWT_SECRET
+    );
 
-      const cat = await db.Category.create({ name: `Cat${randomSuffix}` }); // Categoría única
-
-      const event = await db.Event.create({
-        title: `Event${randomSuffix}`,
-        description: "D",
-        date: new Date(),
-        location: "L",
-        categoryId: cat.id,
-        ticketType: "Gen",
-        price: 10,
-        totalTickets: 10,
-        availableTickets: 10,
-        imageUrl: "x",
-      });
-      eventId = event.id;
-    } catch (err) {
-      console.error("Setup Error:", err);
-    }
+    const cat = await db.Category.create({ name: "TicketCategory" });
+    const event = await db.Event.create({
+      title: "Concert Final",
+      description: "Description",
+      date: new Date(),
+      location: "Venue",
+      categoryId: cat.id,
+      ticketType: "General",
+      price: 50,
+      totalTickets: 10,
+      availableTickets: 10,
+      imageUrl: "http://image.com",
+    });
+    eventId = event.id;
   });
 
-  test("POST /purchase - Success", async () => {
+  test("POST /purchase - Success (201)", async () => {
     const res = await request(app)
       .post("/api/tickets/purchase")
       .set("Authorization", `Bearer ${userToken}`)
-      .send({ eventId: eventId, quantity: 1, cardDetails: { number: "123" } });
+      .send({
+        eventId: eventId,
+        quantity: 1,
+        cardDetails: { number: "1234567890123456" },
+      });
 
     expect(res.statusCode).toBe(201);
+    expect(res.body.message).toContain("con éxito");
+  });
+
+  test("POST /purchase - Invalid Data (400)", async () => {
+    const res = await request(app)
+      .post("/api/tickets/purchase")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({ eventId: eventId }); // Falta cantidad
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  test("POST /purchase - Not Enough Tickets (400)", async () => {
+    // Intentar comprar más de lo disponible (100 > 9 restantes)
+    const res = await request(app)
+      .post("/api/tickets/purchase")
+      .set("Authorization", `Bearer ${userToken}`)
+      .send({
+        eventId: eventId,
+        quantity: 100,
+        cardDetails: { number: "123" },
+      });
+
+    expect(res.statusCode).toBe(400);
+  });
+
+  test("GET /my-tickets - List user tickets (200)", async () => {
+    const res = await request(app)
+      .get("/api/tickets/my-tickets")
+      .set("Authorization", `Bearer ${userToken}`);
+
+    expect(res.statusCode).toBe(200);
+    // Accedemos al array dentro de la propiedad .tickets
+    expect(res.body.tickets.length).toBeGreaterThanOrEqual(1);
   });
 });

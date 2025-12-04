@@ -8,15 +8,21 @@ const EventsManager = () => {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-  
-  // ESTADO NUEVO: Evento seleccionado para editar
   const [selectedEvent, setSelectedEvent] = useState(null);
+
+  // Estados de Paginación y Filtro
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [filterType, setFilterType] = useState(''); // '' (All), 'upcoming', 'past'
 
   useEffect(() => {
     const fetchEvents = async () => {
+      setLoading(true);
       try {
-        const data = await eventService.getAll();
+        // Pasamos el tipo de filtro al servicio
+        const data = await eventService.getAll(page, 10, filterType); 
         setEvents(data.events || []);
+        setTotalPages(data.totalPages || 1);
         setLoading(false);
       } catch (error) {
         console.error(error);
@@ -25,31 +31,33 @@ const EventsManager = () => {
       }
     };
     fetchEvents();
-  }, [refreshKey]);
+  }, [refreshKey, page, filterType]); // Recargar si cambia el filtro
 
-  const handleEventSaved = () => {
-    setRefreshKey(old => old + 1);
-  };
-
-  // Abrir modal para CREAR
-  const handleCreate = () => {
-    setSelectedEvent(null);
-    setShowModal(true);
-  };
-
-  // Abrir modal para EDITAR
-  const handleEdit = (evt) => {
-    setSelectedEvent(evt);
-    setShowModal(true);
-  };
+  const handleEventCreated = () => setRefreshKey(old => old + 1);
+  const handleCreate = () => { setSelectedEvent(null); setShowModal(true); };
+  const handleEdit = (evt) => { setSelectedEvent(evt); setShowModal(true); };
 
   return (
     <div className="card shadow-sm border-0">
       <div className="card-header bg-white d-flex justify-content-between align-items-center py-3">
-        <h5 className="mb-0 fw-bold" style={{ color: 'var(--secondary-color)' }}>Events List</h5>
-        <button className="btn btn-primary" onClick={handleCreate}>
-          + Create Event
-        </button>
+        <h5 className="mb-0 fw-bold text-secondary-custom">Events List</h5>
+        
+        <div className="d-flex gap-3">
+          {/* FILTRO DE FECHA */}
+          <select 
+            className="form-select" 
+            value={filterType}
+            onChange={(e) => { setFilterType(e.target.value); setPage(1); }}
+          >
+            <option value="">All Events</option>
+            <option value="upcoming">Upcoming Only</option>
+            <option value="past">Past Events</option>
+          </select>
+
+          <button className="btn btn-primary text-nowrap" onClick={handleCreate}>
+            + Create Event
+          </button>
+        </div>
       </div>
       
       <div className="card-body p-0">
@@ -75,38 +83,20 @@ const EventsManager = () => {
                   events.map((evt) => (
                     <tr key={evt.id}>
                       <td className="ps-4">
-                        <img 
-                          src={evt.imageUrl || 'https://via.placeholder.com/50'} 
-                          alt={evt.title} 
-                          className="img-thumbnail-custom"
-                        />
+                        <img src={evt.imageUrl || 'https://via.placeholder.com/50'} alt={evt.title} className="img-thumbnail-custom"/>
                       </td>
-                      <td>
-                        <div className="fw-bold">{evt.title}</div>
-                        <small className="text-muted">{evt.location}</small>
+                      <td><div className="fw-bold">{evt.title}</div><small className="text-muted">{evt.location}</small></td>
+                      
+                      {/* Colorear fecha si ya pasó */}
+                      <td className={new Date(evt.date) < new Date() ? "text-danger" : "text-success"}>
+                        {new Date(evt.date).toLocaleDateString()}
                       </td>
-                      <td>{new Date(evt.date).toLocaleDateString()}</td>
-                      <td>
-                        <span className="badge bg-secondary-custom opacity-75">
-                          {evt.Category ? evt.Category.name : 'Uncategorized'}
-                        </span>
-                      </td>
-                      <td>
-                        <small>
-                          Total: {evt.totalTickets}<br/>
-                          Avail: <strong>{evt.availableTickets}</strong>
-                        </small>
-                      </td>
+                      
+                      <td><span className="badge bg-secondary-custom opacity-75">{evt.Category?.name}</span></td>
+                      <td><small>Total: {evt.totalTickets}<br/>Avail: <strong>{evt.availableTickets}</strong></small></td>
                       <td className="text-end pe-4">
-                        {/* BOTÓN EDITAR AGREGADO */}
-                        <button 
-                          onClick={() => handleEdit(evt)}
-                          className="btn btn-sm btn-outline-primary me-2" 
-                          title="Edit Event"
-                        >
-                          ✏️
-                        </button>
-                        <button className="btn btn-sm btn-outline-danger" title="Delete Event">🗑️</button>
+                        <button onClick={() => handleEdit(evt)} className="btn btn-sm btn-outline-primary me-2">✏️</button>
+                        <button className="btn btn-sm btn-outline-danger">🗑️</button>
                       </td>
                     </tr>
                   ))
@@ -117,11 +107,17 @@ const EventsManager = () => {
         )}
       </div>
 
+      <div className="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+        <button className="btn btn-outline-secondary" disabled={page === 1} onClick={() => setPage(p => p - 1)}>&laquo; Prev</button>
+        <span className="text-muted small">Page <strong>{page}</strong> of <strong>{totalPages}</strong></span>
+        <button className="btn btn-outline-secondary" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next &raquo;</button>
+      </div>
+
       <CreateEventModal 
         show={showModal} 
         onClose={() => setShowModal(false)} 
-        onEventCreated={handleEventSaved}
-        eventToEdit={selectedEvent} // Pasamos el evento a editar
+        onEventCreated={handleEventCreated}
+        eventToEdit={selectedEvent}
       />
     </div>
   );

@@ -11,11 +11,21 @@ const UsersManager = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Estados de Paginación y Filtros
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [filterRole, setFilterRole] = useState('');   // '' = Todos
+  const [filterStatus, setFilterStatus] = useState(''); // '' = Todos
+
   useEffect(() => {
     const fetchUsers = async () => {
+      setLoading(true);
       try {
-        const data = await userService.getAll();
+        // Enviamos página, límite y los dos filtros nuevos
+        const data = await userService.getAll(page, 10, filterRole, filterStatus);
+        
         setUsers(data.users || []);
+        setTotalPages(data.totalPages || 1);
         setLoading(false);
       } catch (error) {
         console.error(error);
@@ -24,7 +34,13 @@ const UsersManager = () => {
       }
     };
     fetchUsers();
-  }, [refreshKey]);
+  }, [refreshKey, page, filterRole, filterStatus]); // Recargar si cambia algo
+
+  // Resetear página a 1 cuando se cambia un filtro
+  const handleFilterChange = (setter, value) => {
+    setter(value);
+    setPage(1);
+  };
 
   const handleEdit = (user) => {
     setSelectedUser(user);
@@ -55,8 +71,33 @@ const UsersManager = () => {
 
   return (
     <div className="card shadow-sm border-0">
-      <div className="card-header bg-white py-3">
+      <div className="card-header bg-white d-flex justify-content-between align-items-center py-3 flex-wrap gap-3">
         <h5 className="mb-0 fw-bold text-secondary-custom">Users & Roles Management</h5>
+        
+        {/* BARRA DE FILTROS */}
+        <div className="d-flex gap-2">
+          <select 
+            className="form-select form-select-sm" 
+            value={filterRole}
+            onChange={(e) => handleFilterChange(setFilterRole, e.target.value)}
+            style={{ width: '150px' }}
+          >
+            <option value="">All Roles</option>
+            <option value="admin">Admins Only</option>
+            <option value="user">Users Only</option>
+          </select>
+
+          <select 
+            className="form-select form-select-sm" 
+            value={filterStatus}
+            onChange={(e) => handleFilterChange(setFilterStatus, e.target.value)}
+            style={{ width: '150px' }}
+          >
+            <option value="">All Statuses</option>
+            <option value="active">Active</option>
+            <option value="blocked">Blocked</option>
+          </select>
+        </div>
       </div>
       
       <div className="card-body p-0">
@@ -75,44 +116,70 @@ const UsersManager = () => {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
-                  <tr key={user.id} className={user.status === 'blocked' ? 'bg-light text-muted' : ''}>
-                    <td className="ps-4 fw-bold text-primary-custom">
-                      {user.firstName} {user.lastName}
-                    </td>
-                    <td>{user.email}</td>
-                    <td>
-                      <span className={`badge ${user.role === 'admin' ? 'bg-primary-custom' : 'bg-secondary'}`}>
-                        {user.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${user.status === 'active' ? 'bg-success' : 'bg-danger'}`}>
-                        {user.status}
-                      </span>
-                    </td>
-
-                    <td className="text-end pe-4">
-                      <button 
-                        onClick={() => handleEdit(user)}
-                        className="btn btn-sm btn-outline-primary me-2"
-                      >
-                        Edit Role
-                      </button>
-                      
-                      <button 
-                        onClick={() => toggleBlock(user)}
-                        className={`btn btn-sm ${user.status === 'active' ? 'btn-outline-danger' : 'btn-outline-success'}`}
-                      >
-                        {user.status === 'active' ? 'Block' : 'Activate'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {users.length === 0 ? (
+                  <tr><td colSpan="5" className="text-center py-4">No users found matching filters.</td></tr>
+                ) : (
+                  users.map((user) => (
+                    <tr key={user.id} className={user.status === 'blocked' ? 'bg-light text-muted' : ''}>
+                      <td className="ps-4 fw-bold text-primary-custom">
+                        {user.firstName} {user.lastName}
+                      </td>
+                      <td>{user.email}</td>
+                      <td>
+                        <span className={`badge ${user.role === 'admin' ? 'bg-primary-custom' : 'bg-secondary'}`}>
+                          {user.role}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${user.status === 'active' ? 'bg-success' : 'bg-danger'}`}>
+                          {user.status}
+                        </span>
+                      </td>
+                      <td className="text-end pe-4">
+                        <button 
+                          onClick={() => handleEdit(user)}
+                          className="btn btn-sm btn-outline-primary me-2"
+                        >
+                          Edit Role
+                        </button>
+                        
+                        <button 
+                          onClick={() => toggleBlock(user)}
+                          className={`btn btn-sm ${user.status === 'active' ? 'btn-outline-danger' : 'btn-outline-success'}`}
+                        >
+                          {user.status === 'active' ? 'Block' : 'Activate'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         )}
+      </div>
+
+      {/* CONTROLES DE PAGINACIÓN */}
+      <div className="card-footer bg-white py-3 d-flex justify-content-between align-items-center">
+        <button 
+          className="btn btn-outline-secondary" 
+          disabled={page === 1} 
+          onClick={() => setPage(p => p - 1)}
+        >
+          &laquo; Previous
+        </button>
+        
+        <span className="text-muted small">
+          Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+        </span>
+        
+        <button 
+          className="btn btn-outline-secondary" 
+          disabled={page === totalPages} 
+          onClick={() => setPage(p => p + 1)}
+        >
+          Next &raquo;
+        </button>
       </div>
 
       <EditUserModal 

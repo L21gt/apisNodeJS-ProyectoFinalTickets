@@ -8,8 +8,8 @@ const messageService = {
   },
 
   // Obtener todos los mensajes (Solo Admin)
-  getAllMessages: async () => {
-    const response = await api.get("/messages");
+  getAllMessages: async (page = 1, limit = 10) => {
+    const response = await api.get(`/messages?page=${page}&limit=${limit}`);
     return response.data;
   },
 
