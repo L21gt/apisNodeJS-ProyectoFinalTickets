@@ -70,9 +70,9 @@ describe("User Routes Integration Tests", () => {
   });
 
   test("PUT /api/users/:id - Admin CANNOT block themselves (400)", async () => {
-    // Obtenemos el ID del admin desde el token decodificado o usándolo si lo guardaste en una variable
+    // Obtenemos el ID del admin desde el token decodificado
     // En este test setup, sabemos que creamos al admin primero.
-    // Vamos a intentar bloquear al usuario que tiene el token de admin.
+    // Se intentar bloquear al usuario que tiene el token de admin.
 
     // Primero averiguamos el ID del admin (buscándolo por email)
     const adminUser = await db.User.findOne({

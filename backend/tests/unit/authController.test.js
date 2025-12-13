@@ -3,29 +3,31 @@ const { User } = require("../../src/models");
 const jwt = require("jsonwebtoken");
 const httpMocks = require("node-mocks-http");
 
+// Mock de modelos y jwt
 jest.mock("../../src/models", () => ({
   User: {
-    findOne: jest.fn(),
-    create: jest.fn(),
-    findByPk: jest.fn(),
+    findOne: jest.fn(), // Simula la búsqueda de un usuario por email
+    create: jest.fn(), // Simula la creación de un nuevo usuario
+    findByPk: jest.fn(), // Simula la búsqueda de un usuario por ID
   },
 }));
 
-jest.mock("jsonwebtoken");
+jest.mock("jsonwebtoken"); // Simula la generación de tokens JWT
 
 describe("Auth Controller Coverage", () => {
   let req, res;
 
   beforeEach(() => {
-    req = httpMocks.createRequest();
-    res = httpMocks.createResponse();
-    jest.clearAllMocks();
+    req = httpMocks.createRequest(); // Simula la solicitud HTTP
+    res = httpMocks.createResponse(); // Simula la respuesta HTTP
+    jest.clearAllMocks(); // Limpia los mocks antes de cada test
   });
 
   // --- LOGIN ---
   test("Login Success", async () => {
-    req.body = { email: "test@test.com", password: "pass" };
+    req.body = { email: "test@test.com", password: "pass" }; // Datos de login simulados
     User.findOne.mockResolvedValue({
+      // Simula usuario encontrado
       id: 1,
       email: "test@test.com",
       role: "user",
@@ -33,7 +35,7 @@ describe("Auth Controller Coverage", () => {
       comparePassword: jest.fn().mockResolvedValue(true),
     });
     jwt.sign.mockReturnValue("token");
-    await authController.login(req, res);
+    await authController.login(req, res); // Llama al controlador de login
     expect(res.statusCode).toBe(200);
   });
 
@@ -69,8 +71,8 @@ describe("Auth Controller Coverage", () => {
       email: "n@t.com",
       password: "p",
     };
-    User.findOne.mockResolvedValue(null);
-    User.create.mockResolvedValue({ id: 2, ...req.body });
+    User.findOne.mockResolvedValue(null); // Simula que no existe usuario con ese email
+    User.create.mockResolvedValue({ id: 2, ...req.body }); // Simula creación exitosa
     await authController.register(req, res);
     expect(res.statusCode).toBe(201);
   });
@@ -82,7 +84,7 @@ describe("Auth Controller Coverage", () => {
     expect(res.statusCode).toBe(400);
   });
 
-  // --- UPDATE PROFILE (Nuevo) ---
+  // --- UPDATE PROFILE ---
   test("Update Profile Success", async () => {
     req.user = { id: 1 };
     req.body = { firstName: "NewName" };
@@ -90,7 +92,7 @@ describe("Auth Controller Coverage", () => {
     const mockUser = {
       id: 1,
       firstName: "Old",
-      save: jest.fn(),
+      save: jest.fn(), // Simula el guardado del usuario
     };
     User.findByPk.mockResolvedValue(mockUser);
 
@@ -112,10 +114,10 @@ describe("Auth Controller Coverage", () => {
 
     const mockUser = {
       id: 1,
-      comparePassword: jest.fn().mockResolvedValue(true),
+      comparePassword: jest.fn().mockResolvedValue(true), // Contraseña actual correcta
       save: jest.fn(),
     };
-    User.findByPk.mockResolvedValue(mockUser);
+    User.findByPk.mockResolvedValue(mockUser); // Simula encontrar el usuario
 
     await authController.updateProfile(req, res);
     expect(res.statusCode).toBe(200);
@@ -127,7 +129,7 @@ describe("Auth Controller Coverage", () => {
 
     const mockUser = {
       id: 1,
-      comparePassword: jest.fn().mockResolvedValue(false),
+      comparePassword: jest.fn().mockResolvedValue(false), // Contraseña actual incorrecta
     };
     User.findByPk.mockResolvedValue(mockUser);
 

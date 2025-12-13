@@ -2,7 +2,7 @@ const request = require("supertest");
 const app = require("../../src/app");
 const db = require("../../src/models");
 
-// Timeout generoso por si acaso
+// Timeout extendido
 jest.setTimeout(30000);
 
 beforeAll(async () => {

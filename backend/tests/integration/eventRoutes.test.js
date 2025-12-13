@@ -23,7 +23,7 @@ describe("Event Routes Coverage Tests", () => {
       password: "pass",
       role: "admin",
     });
-    const jwt = require("jsonwebtoken");
+    const jwt = require("jsonwebtoken"); // Requiere jsonwebtoken para generar token
     adminToken = jwt.sign(
       { id: admin.id, role: admin.role },
       process.env.JWT_SECRET
@@ -33,6 +33,7 @@ describe("Event Routes Coverage Tests", () => {
     categoryId = cat.id;
   });
 
+  // 1. CREATE
   test("POST /api/events - Create Event", async () => {
     const buffer = Buffer.from(
       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
@@ -56,7 +57,7 @@ describe("Event Routes Coverage Tests", () => {
     eventId = res.body.event.id;
   });
 
-  // TEST NUEVO: Get By ID
+  // Get By ID
   test("GET /api/events/:id - Get Single Event", async () => {
     const res = await request(app).get(`/api/events/${eventId}`);
     expect(res.statusCode).toBe(200);
@@ -68,7 +69,7 @@ describe("Event Routes Coverage Tests", () => {
     expect(res.statusCode).toBe(404);
   });
 
-  // TEST NUEVO: Update Event
+  // Update Event
   test("PUT /api/events/:id - Update Event", async () => {
     const res = await request(app)
       .put(`/api/events/${eventId}`)
@@ -127,16 +128,9 @@ describe("Event Routes Coverage Tests", () => {
   });
 
   test("DELETE /api/events/:id - Error: Delete Non-existent Event (404)", async () => {
-    // Nota: Asegúrate de tener la ruta DELETE en tu router y controlador si vas a probarla,
-    // si no la tienes implementada, omite este test específico.
-    // Si tienes implementado deleteEvent en el controlador:
     const res = await request(app)
       .delete("/api/events/999999")
       .set("Authorization", `Bearer ${adminToken}`);
-
-    // Si no implementaste delete, esto dará 404 (por ruta no encontrada) o 500.
-    // Si tu controlador tiene deleteEvent, debería dar 404 json.
-    // Como no recuerdo si implementamos deleteEvent, probemos solo el PUT arriba que es seguro.
   });
 
   test("POST /api/events - Error: Invalid Data (Database Error)", async () => {

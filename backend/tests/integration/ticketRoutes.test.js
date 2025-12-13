@@ -7,11 +7,11 @@ jest.setTimeout(120000);
 
 beforeAll(async () => {
   try {
-    // 1. Asegurar que las tablas existan sin borrarlas (Rápido)
+    // 1. Asegurar que las tablas existan sin borrarlas
     await db.sequelize.sync({ force: false });
 
     // 2. Limpieza segura de datos (Evita deadlocks de TRUNCATE)
-    // Orden específico: Hijos -> Padres
+
     await db.Ticket.destroy({ where: {} });
     await db.Event.destroy({ where: {} });
     await db.User.destroy({ where: {} });
@@ -49,6 +49,7 @@ describe("Ticket Routes Coverage Tests", () => {
       process.env.JWT_SECRET
     );
 
+    // Crear Categoría y Evento
     const cat = await db.Category.create({ name: "TicketCategory" });
     const event = await db.Event.create({
       title: "Concert Final",
