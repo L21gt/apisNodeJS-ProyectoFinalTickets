@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import reportService from '../../services/reportService';
 import { toast } from 'react-toastify';
 
-// Componente interno para las tarjetas (Cards)
+// Internal Card Component
 const StatCard = ({ title, value, color, icon }) => (
   <div className="col-md-3 mb-4">
     <div className="card shadow-sm border-0 h-100 text-white" style={{ backgroundColor: color }}>
@@ -18,12 +18,13 @@ const StatCard = ({ title, value, color, icon }) => (
 );
 
 const DashboardStats = () => {
+  // Initialize with safe defaults
   const [stats, setStats] = useState({
     totalRevenue: 0,
     totalTickets: 0,
     totalUsers: 0,
     activeEvents: 0,
-    recentSales: []
+    recentSales: [] 
   });
   const [loading, setLoading] = useState(true);
 
@@ -31,24 +32,30 @@ const DashboardStats = () => {
     const fetchStats = async () => {
       try {
         const data = await reportService.getDashboardStats();
-        setStats(data);
+        // FIX 1: Merge new data with previous state to prevent 'recentSales' from becoming undefined
+        setStats(prevStats => ({
+            ...prevStats, 
+            ...data
+        }));
         setLoading(false);
       } catch (error) {
         console.error(error);
-        toast.error('Error al cargar estadísticas');
+        // FIX 2: Translate error message to English
+        toast.error('Error loading statistics');
         setLoading(false);
       }
     };
     fetchStats();
   }, []);
 
-  if (loading) return <div className="text-center p-5">Cargando tablero...</div>;
-
+  // FIX 3: Translate loading text
+  if (loading) return <div className="text-center p-5">Loading dashboard...</div>;
 
   return (
     <div>
       <div className="row mb-4">
-        <StatCard title="Total Revenue" value={`$${stats.totalRevenue.toFixed(2)}`} color="var(--color-yale-blue)" icon="💰" />
+        {/* Note: Ensure these colors exist in your CSS variables */}
+        <StatCard title="Total Revenue" value={`$${stats.totalRevenue?.toFixed(2) || '0.00'}`} color="var(--color-yale-blue)" icon="💰" />
         <StatCard title="Tickets Sold" value={stats.totalTickets} color="var(--color-air-force)" icon="🎟️" />
         <StatCard title="Total Users" value={stats.totalUsers} color="var(--color-cambridge)" icon="👥" />
         <StatCard title="Active Events" value={stats.activeEvents} color="var(--color-sage)" icon="📅" />
@@ -70,9 +77,8 @@ const DashboardStats = () => {
                 </tr>
               </thead>
               <tbody>
-                {stats.recentSales.length === 0 ? (
-                  <tr><td colSpan="4" className="text-center py-4 text-muted">No sales found.</td></tr>
-                ) : (
+                {/* FIX 4: Use optional chaining (?.) to prevent crash if recentSales is null */}
+                {stats.recentSales?.length > 0 ? (
                   stats.recentSales.map(sale => (
                     <tr key={sale.id}>
                       <td className="ps-4 text-muted small">
@@ -81,10 +87,12 @@ const DashboardStats = () => {
                       <td>
                         {sale.User ? `${sale.User.firstName} ${sale.User.lastName}` : 'Deleted User'}
                       </td>
-                      <td>{sale.Event?.title}</td>
+                      <td>{sale.Event?.title || 'Unknown Event'}</td>
                       <td className="fw-bold text-success">${sale.totalPrice}</td>
                     </tr>
                   ))
+                ) : (
+                  <tr><td colSpan="4" className="text-center py-4 text-muted">No sales found.</td></tr>
                 )}
               </tbody>
             </table>

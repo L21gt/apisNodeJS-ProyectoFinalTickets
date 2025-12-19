@@ -1,149 +1,100 @@
 import { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
 import reportService from '../../services/reportService';
-import eventService from '../../services/eventService'; 
+import eventService from '../../services/eventService';
 import { toast } from 'react-toastify';
-
-// Chart.js Imports
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler, 
-} from 'chart.js';
-import { Line } from 'react-chartjs-2';
-
-// Register Chart components
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  Filler
-);
 
 const Reports = () => {
   const [activeTab, setActiveTab] = useState('sales'); // 'sales' or 'attendees'
   
-  // Sales Report State
-  const { register: registerSales, handleSubmit: handleSalesSubmit } = useForm();
+  // --- ESTADOS DE REPORTE DE VENTAS ---
   const [salesData, setSalesData] = useState([]);
-  const [salesLoading, setSalesLoading] = useState(false);
-  const [searchedSales, setSearchedSales] = useState(false);
+  const [salesPage, setSalesPage] = useState(1);
+  const [salesTotalPages, setSalesTotalPages] = useState(1);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
 
-  // Attendees List State
-  const { register: registerAttendees, handleSubmit: handleAttendeesSubmit } = useForm();
-  const [attendeesData, setAttendeesData] = useState([]);
-  const [attendeesLoading, setAttendeesLoading] = useState(false);
+  // --- ESTADOS DE LISTA DE ASISTENTES ---
   const [eventsList, setEventsList] = useState([]);
+  const [selectedEventId, setSelectedEventId] = useState('');
+  const [attendeesData, setAttendeesData] = useState([]);
+  const [attendeesPage, setAttendeesPage] = useState(1);
+  const [attendeesTotalPages, setAttendeesTotalPages] = useState(1);
 
-  // Load events for the dropdown (Attendees tab)
+  // 1. DEFINIR LA FUNCIÓN PRIMERO (Para evitar el error de "access before declaration")
+  const fetchSales = async () => {
+    try {
+      // Usamos el estado actual de la página y fechas
+      const data = await reportService.getSales(salesPage, 10, dateRange.start, dateRange.end);
+      setSalesData(data.sales || []);
+      setSalesTotalPages(data.totalPages || 1);
+    } catch (error) {
+      console.error(error);
+      toast.error('Error loading sales report');
+    }
+  };
+
+  // 2. LUEGO EL EFECTO QUE LA USA
+  useEffect(() => {
+    if (activeTab === 'sales') {
+      fetchSales();
+    }
+    // Desactivamos la advertencia de dependencias para evitar bucles con 'fetchSales'
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, salesPage]); 
+
+  // Cargar Lista de Eventos (para el selector)
   useEffect(() => {
     const loadEvents = async () => {
       try {
-        const data = await eventService.getAll();
+        const data = await eventService.getAll(1, 100);
         setEventsList(data.events || []);
-      } catch (error) {
-        console.error("Error loading events list", error);
-      }
+      } catch (error) { console.error(error); }
     };
     loadEvents();
   }, []);
 
-  // --- SALES LOGIC ---
-  const onSalesSubmit = async (data) => {
-    if (new Date(data.endDate) < new Date(data.startDate)) {
-      toast.warning('End date cannot be before start date');
-      return;
+  // Cargar Asistentes cuando se elige evento o cambia página
+  useEffect(() => {
+    if (activeTab === 'attendees' && selectedEventId) {
+      const fetchAttendees = async () => {
+        try {
+          const data = await reportService.getAttendees(selectedEventId, attendeesPage, 10);
+          setAttendeesData(data.attendees || []);
+          setAttendeesTotalPages(data.totalPages || 1);
+        } catch (error) {
+          console.error(error);
+          toast.error('Error loading attendees');
+        }
+      };
+      fetchAttendees();
     }
-    setSalesLoading(true);
-    setSearchedSales(true);
-    try {
-      const result = await reportService.getSales(data.startDate, data.endDate);
-      setSalesData(result);
-    } catch (error) {
-      console.error(error);
-      toast.error('Error generating sales report');
-    } finally {
-      setSalesLoading(false);
-    }
+  }, [selectedEventId, attendeesPage, activeTab]);
+
+  const handleEventChange = (e) => {
+    setSelectedEventId(e.target.value);
+    setAttendeesPage(1);
   };
 
-  // Prepare Chart Data
-  // We group sales by date for the chart
-  const salesByDate = salesData.reduce((acc, sale) => {
-    const date = new Date(sale.createdAt).toLocaleDateString('en-US');
-    acc[date] = (acc[date] || 0) + parseFloat(sale.totalPrice);
-    return acc;
-  }, {});
-
-  const chartData = {
-    labels: Object.keys(salesByDate).reverse(), // Dates
-    datasets: [
-      {
-        label: 'Revenue ($)',
-        data: Object.values(salesByDate).reverse(), // Amounts
-        borderColor: '#1B4079', // Yale Blue
-        backgroundColor: 'rgba(27, 64, 121, 0.1)',
-        fill: true,
-        tension: 0.4,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'top' },
-      title: { display: true, text: 'Sales Trend' },
-    },
-  };
-
-  const totalRevenue = salesData.reduce((sum, sale) => sum + parseFloat(sale.totalPrice), 0);
-
-  // --- ATTENDEES LOGIC ---
-  const onAttendeesSubmit = async (data) => {
-    if (!data.eventId) {
-      toast.warning('Please select an event');
-      return;
-    }
-    setAttendeesLoading(true);
-    try {
-      const result = await reportService.getAttendees(data.eventId);
-      setAttendeesData(result);
-      if (result.length === 0) toast.info('No attendees found for this event yet.');
-    } catch (error) {
-      console.error(error);
-      toast.error('Error loading attendees list');
-    } finally {
-      setAttendeesLoading(false);
-    }
+  const handleFilterSubmit = (e) => {
+    e.preventDefault();
+    setSalesPage(1); 
+    fetchSales(); // Llamada manual al filtrar
   };
 
   return (
     <div className="card shadow-sm border-0">
-      {/* TABS HEADER */}
-      <div className="card-header bg-white pt-3 pb-0">
+      <div className="card-header bg-white">
         <ul className="nav nav-tabs card-header-tabs">
           <li className="nav-item">
             <button 
-              className={`nav-link ${activeTab === 'sales' ? 'active fw-bold text-primary-custom' : 'text-muted'}`}
+              className={`nav-link ${activeTab === 'sales' ? 'active fw-bold text-primary' : 'text-muted'}`}
               onClick={() => setActiveTab('sales')}
             >
-              📊 Sales Report
+              💰 Sales Report
             </button>
           </li>
           <li className="nav-item">
             <button 
-              className={`nav-link ${activeTab === 'attendees' ? 'active fw-bold text-primary-custom' : 'text-muted'}`}
+              className={`nav-link ${activeTab === 'attendees' ? 'active fw-bold text-primary' : 'text-muted'}`}
               onClick={() => setActiveTab('attendees')}
             >
               👥 Attendees List
@@ -151,145 +102,119 @@ const Reports = () => {
           </li>
         </ul>
       </div>
-      
-      <div className="card-body p-4">
-        
-        {/* === TAB 1: SALES REPORT === */}
+
+      <div className="card-body">
+        {/* --- PESTAÑA VENTAS --- */}
         {activeTab === 'sales' && (
-          <div className="fade-in">
-            <form onSubmit={handleSalesSubmit(onSalesSubmit)} className="row g-3 align-items-end mb-4">
-              <div className="col-md-4">
-                <label className="form-label fw-bold">Start Date</label>
-                <input type="date" className="form-control" {...registerSales('startDate', { required: true })} />
+          <div>
+            {/* Filtros */}
+            <form onSubmit={handleFilterSubmit} className="row g-3 mb-4 align-items-end">
+              <div className="col-md-3">
+                <label className="form-label small fw-bold">Start Date</label>
+                <input type="date" className="form-control" onChange={(e) => setDateRange({...dateRange, start: e.target.value})} />
               </div>
-              <div className="col-md-4">
-                <label className="form-label fw-bold">End Date</label>
-                <input type="date" className="form-control" {...registerSales('endDate', { required: true })} />
+              <div className="col-md-3">
+                <label className="form-label small fw-bold">End Date</label>
+                <input type="date" className="form-control" onChange={(e) => setDateRange({...dateRange, end: e.target.value})} />
               </div>
-              <div className="col-md-4">
-                <button type="submit" className="btn btn-primary w-100" disabled={salesLoading}>
-                  {salesLoading ? 'Generating...' : 'Generate Report'}
-                </button>
+              <div className="col-md-2">
+                <button type="submit" className="btn btn-primary w-100">Filter</button>
               </div>
             </form>
 
-            {searchedSales && (
-              <>
-                <hr />
-                {/* CHART SECTION */}
-                {salesData.length > 0 ? (
-                  <div className="mb-5 p-3 bg-light rounded" style={{ height: '350px' }}>
-                    <Line data={chartData} options={chartOptions} />
-                  </div>
-                ) : (
-                  <div className="alert alert-info text-center">No sales found in this date range.</div>
-                )}
+            {/* Tabla Ventas */}
+            <div className="table-responsive">
+              <table className="table table-hover align-middle">
+                <thead className="bg-light">
+                  <tr>
+                    <th>Date</th>
+                    <th>User</th>
+                    <th>Event</th>
+                    <th>Qty</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {salesData.length === 0 ? (
+                    <tr><td colSpan="5" className="text-center py-4">No sales records found.</td></tr>
+                  ) : (
+                    salesData.map(sale => (
+                      <tr key={sale.id}>
+                        <td>{new Date(sale.createdAt).toLocaleDateString()}</td>
+                        <td>{sale.User?.firstName} {sale.User?.lastName}<br/><small className="text-muted">{sale.User?.email}</small></td>
+                        <td>{sale.Event?.title}</td>
+                        <td>{sale.quantity}</td>
+                        <td className="fw-bold text-success">${sale.totalPrice}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
 
-                {/* TABLE SECTION */}
-                {salesData.length > 0 && (
-                  <>
-                    <div className="d-flex justify-content-between align-items-center mb-3">
-                      <h6 className="text-secondary-custom">Detailed Transaction Log</h6>
-                      <h4 className="fw-bold text-success">Total Revenue: ${totalRevenue.toFixed(2)}</h4>
-                    </div>
-                    <div className="table-responsive">
-                      <table className="table table-hover align-middle">
-                        <thead className="bg-light">
-                          <tr>
-                            <th className="ps-4">Date</th>
-                            <th>Event</th>
-                            <th>Customer</th>
-                            <th>Qty</th>
-                            <th className="text-end pe-4">Amount</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {salesData.map((sale) => (
-                            <tr key={sale.id}>
-                              <td className="ps-4 small text-muted">
-                                {new Date(sale.createdAt).toLocaleDateString('en-US')} <br/>
-                                {new Date(sale.createdAt).toLocaleTimeString('en-US')}
-                              </td>
-                              <td className="fw-bold">{sale.Event?.title || 'Deleted Event'}</td>
-                              <td>
-                                {sale.User?.firstName} {sale.User?.lastName}<br/>
-                                <span className="small text-muted">{sale.User?.email}</span>
-                              </td>
-                              <td>{sale.quantity}</td>
-                              <td className="text-end pe-4 fw-bold text-secondary-custom">
-                                ${sale.totalPrice}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </>
-                )}
-              </>
-            )}
+            {/* Paginación Ventas */}
+            <div className="d-flex justify-content-between align-items-center mt-3">
+              <button className="btn btn-outline-secondary btn-sm" disabled={salesPage === 1} onClick={() => setSalesPage(p => p - 1)}>&laquo; Prev</button>
+              <span className="small">Page <strong>{salesPage}</strong> of <strong>{salesTotalPages}</strong></span>
+              <button className="btn btn-outline-secondary btn-sm" disabled={salesPage === salesTotalPages} onClick={() => setSalesPage(p => p + 1)}>Next &raquo;</button>
+            </div>
           </div>
         )}
 
-        {/* === TAB 2: ATTENDEES LIST === */}
+        {/* --- PESTAÑA ASISTENTES --- */}
         {activeTab === 'attendees' && (
-          <div className="fade-in">
-            <form onSubmit={handleAttendeesSubmit(onAttendeesSubmit)} className="row g-3 align-items-end mb-4">
-              <div className="col-md-8">
-                <label className="form-label fw-bold">Select Event</label>
-                <select className="form-select" {...registerAttendees('eventId', { required: true })}>
-                  <option value="">-- Choose an event --</option>
-                  {eventsList.map(evt => (
-                    <option key={evt.id} value={evt.id}>{evt.title}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-md-4">
-                <button type="submit" className="btn btn-secondary w-100" disabled={attendeesLoading}>
-                  {attendeesLoading ? 'Loading...' : 'Get Attendee List'}
-                </button>
-              </div>
-            </form>
+          <div>
+            <div className="mb-4">
+              <label className="form-label fw-bold">Select Event:</label>
+              <select className="form-select" onChange={handleEventChange} value={selectedEventId}>
+                <option value="">-- Choose an Event --</option>
+                {eventsList.map(evt => (
+                  <option key={evt.id} value={evt.id}>{evt.title}</option>
+                ))}
+              </select>
+            </div>
 
-            <hr />
-
-            {attendeesData.length > 0 && (
+            {selectedEventId && (
               <>
-                <div className="d-flex justify-content-between mb-3 align-items-center">
-                  <h5 className="fw-bold text-secondary-custom">Guest List ({attendeesData.length})</h5>
-                  <button className="btn btn-sm btn-outline-success" onClick={() => window.print()}>
-                    🖨️ Print List
-                  </button>
-                </div>
                 <div className="table-responsive">
-                  <table className="table table-bordered align-middle">
+                  <table className="table table-striped align-middle">
                     <thead className="bg-light">
                       <tr>
-                        <th className="ps-4">Attendee Name</th>
+                        <th>#</th>
+                        <th>Name</th>
                         <th>Email</th>
-                        <th>Ticket Type</th>
-                        <th>Qty</th>
-                        <th>Order ID</th>
+                        <th>Purchase Date</th>
+                        <th>Ticket ID</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {attendeesData.map((t) => (
-                        <tr key={t.id}>
-                          <td className="ps-4 fw-bold">{t.User?.firstName} {t.User?.lastName}</td>
-                          <td>{t.User?.email}</td>
-                          <td><span className="badge bg-info text-dark">Standard</span></td>
-                          <td>{t.quantity}</td>
-                          <td className="font-monospace small text-muted">{t.orderId}</td>
-                        </tr>
-                      ))}
+                      {attendeesData.length === 0 ? (
+                        <tr><td colSpan="5" className="text-center py-4">No attendees yet.</td></tr>
+                      ) : (
+                        attendeesData.map((t, idx) => (
+                          <tr key={t.id}>
+                            <td>{((attendeesPage - 1) * 10) + idx + 1}</td>
+                            <td className="fw-bold">{t.User?.firstName} {t.User?.lastName}</td>
+                            <td>{t.User?.email}</td>
+                            <td>{new Date(t.createdAt).toLocaleDateString()}</td>
+                            <td><small className="font-monospace text-muted">{t.orderId.substring(0,8)}...</small></td>
+                          </tr>
+                        ))
+                      )}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Paginación Asistentes */}
+                <div className="d-flex justify-content-between align-items-center mt-3">
+                  <button className="btn btn-outline-secondary btn-sm" disabled={attendeesPage === 1} onClick={() => setAttendeesPage(p => p - 1)}>&laquo; Prev</button>
+                  <span className="small">Page <strong>{attendeesPage}</strong> of <strong>{attendeesTotalPages}</strong></span>
+                  <button className="btn btn-outline-secondary btn-sm" disabled={attendeesPage === attendeesTotalPages} onClick={() => setAttendeesPage(p => p + 1)}>Next &raquo;</button>
                 </div>
               </>
             )}
           </div>
         )}
-
       </div>
     </div>
   );

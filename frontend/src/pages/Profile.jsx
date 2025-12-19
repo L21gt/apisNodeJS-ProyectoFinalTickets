@@ -1,64 +1,83 @@
-import { useState, useContext, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { AuthContext } from '../context/AuthContext';
-import authService from '../services/authService';
+import { useState, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import userService from '../services/userService';
 import { toast } from 'react-toastify';
 
 const Profile = () => {
-  const { user, logout } = useContext(AuthContext); // logout por si cambia password
+  const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  // Formulario 1: Datos Personales
-  const { register: registerInfo, handleSubmit: submitInfo, setValue } = useForm();
-  
-  // Formulario 2: Contraseña
-  const { register: registerPass, handleSubmit: submitPass, reset: resetPass, formState: { errors } } = useForm();
+  // Estado del formulario
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
 
-  // Cargar datos actuales
+  // Cargar datos del usuario
   useEffect(() => {
     if (user) {
-      // Nota: user.firstName puede venir junto o separado dependiendo de cómo lo guardaste en el token
-      // Si en el token solo guardaste el nombre completo, quizás necesites ajustar esto.
-      // Asumiremos que el contexto tiene los datos frescos.
-      setValue('firstName', user.firstName || '');
-      // setValue('lastName', user.lastName || ''); // Si tienes apellido en el token
+      setFormData(prev => ({
+        ...prev,
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || ''
+      }));
     }
-  }, [user, setValue]);
+  }, [user]);
 
-  const onUpdateInfo = async (data) => {
-    setLoading(true);
-    try {
-      await authService.updateProfile({
-        firstName: data.firstName,
-        lastName: data.lastName
-      });
-      toast.success('Información actualizada. Por favor inicia sesión nuevamente para ver los cambios.');
-      logout(); // Forzamos logout para refrescar el token con los nuevos datos
-    } catch (error) {
-      console.error(error);
-      toast.error(error.response?.data?.message || 'Error al actualizar');
-    } finally {
-      setLoading(false);
-    }
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const onUpdatePassword = async (data) => {
-    if (data.newPassword !== data.confirmPassword) {
-      toast.error('Las contraseñas nuevas no coinciden');
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    if (formData.newPassword && formData.newPassword !== formData.confirmPassword) {
+      toast.error("New passwords do not match");
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
     try {
-      await authService.updateProfile({
-        currentPassword: data.currentPassword,
-        newPassword: data.newPassword
-      });
-      toast.success('Contraseña cambiada exitosamente');
-      resetPass();
+      const dataToSend = {
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+      };
+
+      if (formData.currentPassword && formData.newPassword) {
+        dataToSend.currentPassword = formData.currentPassword;
+        dataToSend.newPassword = formData.newPassword;
+      }
+
+      // --- CORRECCIÓN AQUÍ ---
+      // Eliminamos 'const updatedUser =' porque no lo usábamos.
+      // Solo esperamos a que la operación termine.
+      await userService.update(user.id, dataToSend);
+      // -----------------------
+
+      // Actualizar estado global
+      const newUserState = { ...user, ...dataToSend };
+      localStorage.setItem('user', JSON.stringify(newUserState));
+      if (setUser) setUser(newUserState);
+
+      toast.success('Profile updated successfully! 🚀');
+      
+      setFormData(prev => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      }));
+
     } catch (error) {
       console.error(error);
-      toast.error(error.response?.data?.message || 'Error al cambiar contraseña');
+      const errorMsg = error.response?.data?.message || 'Error updating profile';
+      toast.error(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -66,69 +85,102 @@ const Profile = () => {
 
   return (
     <div className="container mt-5 mb-5">
-      <h2 className="text-center mb-5 fw-bold text-primary-custom">Mi Perfil</h2>
+      <div className="row justify-content-center">
+        <div className="col-md-8 col-lg-6">
+          <div className="card shadow-sm border-0">
+            <div className="card-header bg-white py-3">
+              <h4 className="mb-0 fw-bold text-primary-custom">My Profile</h4>
+            </div>
+            
+            <div className="card-body p-4">
+              <form onSubmit={handleSubmit}>
+                
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold small text-secondary">First Name</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      name="firstName"
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label fw-bold small text-secondary">Last Name</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      name="lastName"
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      required
+                    />
+                  </div>
+                </div>
 
-      <div className="row g-5">
-        {/* COLUMNA 1: INFORMACIÓN */}
-        <div className="col-md-6">
-          <div className="card shadow-sm border-0 p-4 h-100">
-            <h4 className="mb-4 text-secondary-custom">Información Personal</h4>
-            <form onSubmit={submitInfo(onUpdateInfo)}>
-              <div className="mb-3">
-                <label className="form-label">Nombre</label>
-                <input className="form-control" {...registerInfo('firstName')} placeholder="Tu nombre" />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Apellido</label>
-                <input className="form-control" {...registerInfo('lastName')} placeholder="Tu apellido" />
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Email</label>
-                <input className="form-control bg-light" value={user?.email} readOnly disabled />
-                <small className="text-muted">El email no se puede cambiar.</small>
-              </div>
-              <button type="submit" className="btn btn-primary mt-3" disabled={loading}>
-                Guardar Cambios
-              </button>
-            </form>
-          </div>
-        </div>
+                <div className="mb-4">
+                  <label className="form-label fw-bold small text-secondary">Email Address</label>
+                  <input 
+                    type="email" 
+                    className="form-control bg-light" 
+                    name="email"
+                    value={formData.email}
+                    readOnly
+                    title="Email cannot be changed"
+                  />
+                  <div className="form-text">Email cannot be changed directly.</div>
+                </div>
 
-        {/* COLUMNA 2: CAMBIAR CONTRASEÑA */}
-        <div className="col-md-6">
-          <div className="card shadow-sm border-0 p-4 h-100">
-            <h4 className="mb-4 text-secondary-custom">Cambiar Contraseña</h4>
-            <form onSubmit={submitPass(onUpdatePassword)}>
-              <div className="mb-3">
-                <label className="form-label">Contraseña Actual</label>
-                <input 
-                  type="password" 
-                  className="form-control" 
-                  {...registerPass('currentPassword', { required: true })} 
-                />
-                {errors.currentPassword && <small className="text-danger">Requerido</small>}
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Nueva Contraseña</label>
-                <input 
-                  type="password" 
-                  className="form-control" 
-                  {...registerPass('newPassword', { required: true, minLength: 6 })} 
-                />
-                {errors.newPassword && <small className="text-danger">Mínimo 6 caracteres</small>}
-              </div>
-              <div className="mb-3">
-                <label className="form-label">Confirmar Nueva Contraseña</label>
-                <input 
-                  type="password" 
-                  className="form-control" 
-                  {...registerPass('confirmPassword', { required: true })} 
-                />
-              </div>
-              <button type="submit" className="btn btn-outline-danger mt-3" disabled={loading}>
-                Actualizar Contraseña
-              </button>
-            </form>
+                <hr className="my-4" />
+                <h6 className="fw-bold text-secondary-custom mb-3">Security (Optional)</h6>
+
+                <div className="mb-3">
+                  <label className="form-label small">Current Password</label>
+                  <input 
+                    type="password" 
+                    className="form-control" 
+                    name="currentPassword"
+                    value={formData.currentPassword}
+                    onChange={handleChange}
+                    placeholder="Enter current password to save changes"
+                  />
+                </div>
+
+                <div className="row mb-3">
+                  <div className="col-md-6">
+                    <label className="form-label small">New Password</label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      name="newPassword"
+                      value={formData.newPassword}
+                      onChange={handleChange}
+                      placeholder="Leave blank to keep current"
+                    />
+                  </div>
+                  <div className="col-md-6">
+                    <label className="form-label small">Confirm New Password</label>
+                    <input 
+                      type="password" 
+                      className="form-control" 
+                      name="confirmPassword"
+                      value={formData.confirmPassword}
+                      onChange={handleChange}
+                      placeholder="Confirm new password"
+                    />
+                  </div>
+                </div>
+
+                <div className="d-grid mt-4">
+                  <button type="submit" className="btn btn-primary btn-lg fw-bold" disabled={loading}>
+                    {loading ? 'Saving...' : 'Save Changes'}
+                  </button>
+                </div>
+
+              </form>
+            </div>
           </div>
         </div>
       </div>

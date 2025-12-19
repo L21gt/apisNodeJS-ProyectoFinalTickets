@@ -2,132 +2,129 @@ const { User, Ticket, Event, sequelize } = require("../models");
 const { Op } = require("sequelize");
 
 /**
- * Get general dashboard statistics
+ * General Dashboard Statistics (Widgets)
  * @route GET /api/reports/stats
  */
 exports.getDashboardStats = async (req, res) => {
   try {
-    // Run 4 queries in parallel for performance
-    const [totalUsers, totalEvents, ticketStats, recentSales] =
-      await Promise.all([
-        // 1. Count users (excluding admins if needed, here we count all 'user' role)
-        User.count({ where: { role: "user" } }),
+    // 1. Total Users
+    const totalUsers = await User.count({ where: { role: "user" } });
 
-        // 2. Count active events (Date >= Now)
-        Event.count({
-          where: { date: { [Op.gte]: new Date() } },
-        }),
+    // 2. Total Events (All time)
+    const totalEvents = await Event.count();
 
-        // 3. Sum total revenue and tickets sold
-        Ticket.findAll({
-          attributes: [
-            [sequelize.fn("SUM", sequelize.col("totalPrice")), "totalRevenue"],
-            [sequelize.fn("SUM", sequelize.col("quantity")), "totalTickets"],
-          ],
-        }),
+    // 3. Active Events (FIX: Count events happening in the future)
+    const activeEvents = await Event.count({
+      where: {
+        date: {
+          [Op.gte]: new Date(), // "Greater than or equal to" NOW
+        },
+      },
+    });
 
-        // 4. Get last 5 sales for the quick view table
-        Ticket.findAll({
-          limit: 5,
-          order: [["createdAt", "DESC"]],
-          include: [
-            { model: User, attributes: ["firstName", "lastName"] },
-            { model: Event, attributes: ["title"] },
-          ],
-        }),
-      ]);
+    // 4. Revenue
+    const revenueResult = await Ticket.sum("totalPrice");
+    const totalRevenue = revenueResult || 0;
 
-    // Process results (Sequelize might return strings for sums)
-    const revenue = ticketStats[0].dataValues.totalRevenue || 0;
-    const tickets = ticketStats[0].dataValues.totalTickets || 0;
+    // 5. Tickets Sold
+    const ticketsResult = await Ticket.sum("quantity");
+    const totalTicketsSold = ticketsResult || 0;
 
-    res.status(200).json({
+    // 6. Recent Sales
+    const recentSales = await Ticket.findAll({
+      limit: 5,
+      order: [["createdAt", "DESC"]],
+      include: [
+        { model: User, attributes: ["firstName", "lastName"] },
+        { model: Event, attributes: ["title"] },
+      ],
+    });
+
+    res.json({
       totalUsers,
-      activeEvents: totalEvents,
-      totalRevenue: parseFloat(revenue),
-      totalTickets: parseInt(tickets),
+      totalEvents, // Total historical events
+      activeEvents, // <--- SEND THE NEW CORRECT VALUE
+      totalRevenue,
+      totalTickets: totalTicketsSold,
       recentSales,
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error retrieving dashboard stats" });
+    console.error("Error in getDashboardStats:", error);
+    res.status(500).json({ message: "Error loading dashboard stats" });
   }
 };
 
 /**
- * Get sales report by date range
- * @route GET /api/reports/sales
+ * Sales Report with Pagination
+ * @route GET /api/reports/sales?page=1&limit=10&startDate=...&endDate=...
  */
 exports.getSalesReport = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
+
+    // Optional Date Filters
     const { startDate, endDate } = req.query;
-
-    if (!startDate || !endDate) {
-      return res
-        .status(400)
-        .json({ message: "Start date and end date are required" });
+    const dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter.createdAt = {
+        [Op.between]: [new Date(startDate), new Date(endDate)],
+      };
     }
 
-    // Validation: End date cannot be before start date
-    if (new Date(endDate) < new Date(startDate)) {
-      return res
-        .status(400)
-        .json({ message: "End date cannot be before start date" });
-    }
-
-    // Adjust times to cover the full day
-    const start = new Date(startDate);
-    start.setHours(0, 0, 0, 0);
-
-    const end = new Date(endDate);
-    end.setHours(23, 59, 59, 999);
-
-    const sales = await Ticket.findAll({
-      where: {
-        createdAt: {
-          [Op.between]: [start, end],
-        },
-        status: "valid", // Only valid sales
-      },
+    const { count, rows } = await Ticket.findAndCountAll({
+      where: dateFilter,
       include: [
         { model: User, attributes: ["firstName", "lastName", "email"] },
         { model: Event, attributes: ["title"] },
       ],
       order: [["createdAt", "DESC"]],
+      limit,
+      offset,
     });
 
-    res.status(200).json(sales);
+    res.json({
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      sales: rows,
+    });
   } catch (error) {
-    console.error(error);
+    console.error("Error in getSalesReport:", error);
     res.status(500).json({ message: "Error generating sales report" });
   }
 };
 
 /**
- * Get attendee list by event
- * @route GET /api/reports/attendees/:eventId
+ * Attendees List with Pagination
+ * @route GET /api/reports/attendees/:eventId?page=1&limit=10
  */
 exports.getEventAttendees = async (req, res) => {
   try {
     const { eventId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const offset = (page - 1) * limit;
 
-    const tickets = await Ticket.findAll({
-      where: {
-        eventId,
-        status: "valid",
-      },
+    const { count, rows } = await Ticket.findAndCountAll({
+      where: { eventId },
       include: [
-        {
-          model: User,
-          attributes: ["firstName", "lastName", "email"], // Only necessary data
-        },
+        { model: User, attributes: ["firstName", "lastName", "email"] },
       ],
-      order: [["createdAt", "DESC"]],
+      order: [["createdAt", "DESC"]], // Most recent first
+      limit,
+      offset,
     });
 
-    res.status(200).json(tickets);
+    res.json({
+      totalItems: count,
+      totalPages: Math.ceil(count / limit),
+      currentPage: page,
+      attendees: rows,
+    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Error retrieving attendees list" });
+    console.error("Error in getEventAttendees:", error);
+    res.status(500).json({ message: "Error fetching attendees" });
   }
 };

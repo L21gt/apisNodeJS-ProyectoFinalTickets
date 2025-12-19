@@ -1,13 +1,13 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import eventService from '../services/eventService';
-import { AuthContext } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext'; // Importar hook
 import { toast } from 'react-toastify';
 
 const EventDetails = () => {
-  const { id } = useParams(); // Obtener el ID de la URL
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useContext(AuthContext);
+  const { user } = useAuth(); // Obtener usuario real
   
   const [event, setEvent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -17,127 +17,111 @@ const EventDetails = () => {
     const fetchEvent = async () => {
       try {
         const data = await eventService.getById(id);
-        // Ajuste: A veces el backend devuelve el objeto directo o dentro de { event: ... }
-        // Si usaste el método findByPk directo en backend, devuelve el objeto.
-        setEvent(data); 
-        setLoading(false);
+        setEvent(data);
       } catch (error) {
         console.error(error);
-        toast.error('The event could not be loaded');
-        navigate('/'); // Si falla, volver al home
+        toast.error('Event not found');
+        navigate('/');
+      } finally {
+        setLoading(false);
       }
     };
     fetchEvent();
   }, [id, navigate]);
 
-  const handleAddToCart = () => {
-    // 1. Verificación de seguridad: Si NO está logueado, lo mandamos al Login y detenemos la función.
-    if (!isAuthenticated) {
-      toast.info('Please log in to purchase');
-      navigate('/login');
-      return; // SE DETIENE si no hay usuario
+  const addToCart = () => {
+    // 1. VALIDACIÓN DE SESIÓN
+    if (!user) {
+      toast.info('Please log in to purchase tickets 🎟️');
+      navigate('/login'); // Aquí es donde te redirigía antes
+      return;
     }
 
-    // 2. Obtener el carrito actual del almacenamiento local (o iniciar vacío)
-    const currentCart = JSON.parse(localStorage.getItem('cart')) || [];
-    
-    // 3. Crear el objeto del nuevo item con los datos del evento actual
-    const newItem = {
+    // 2. Lógica de Carrito (LocalStorage)
+    const cartItem = {
       eventId: event.id,
       title: event.title,
       price: event.price,
       image: event.imageUrl,
-      quantity: parseInt(quantity),
-      ticketType: event.ticketType
+      ticketType: event.ticketType,
+      quantity: parseInt(quantity)
     };
 
-    // 4. Agregar el nuevo item a la lista
-    currentCart.push(newItem);
+    // Obtener carrito actual
+    const currentCart = JSON.parse(localStorage.getItem('cart') || '[]');
+    
+    // Verificar si ya existe para sumar cantidad
+    const existingItemIndex = currentCart.findIndex(item => item.eventId === event.id);
+    
+    if (existingItemIndex >= 0) {
+      currentCart[existingItemIndex].quantity += parseInt(quantity);
+    } else {
+      currentCart.push(cartItem);
+    }
 
-    // 5. Guardar la lista actualizada en el almacenamiento local
     localStorage.setItem('cart', JSON.stringify(currentCart));
-
-    // 6. Notificar y redirigir al Checkout
-    toast.success('Added to cart! 🛒');
-    navigate('/cart'); 
+    window.dispatchEvent(new Event("storage")); // Notificar al Navbar para actualizar contador
+    toast.success(`${quantity} tickets added to cart! 🛒`);
   };
 
   if (loading) return <div className="text-center mt-5"><div className="spinner-border text-primary"></div></div>;
   if (!event) return null;
 
   return (
-    <div className="container mt-4">
-      <button onClick={() => navigate(-1)} className="btn btn-link text-secondary-custom mb-3 ps-0 text-decoration-none">
-        ← Back
-      </button>
+    <div className="container mt-5 mb-5">
       <div className="row">
-        <div className="col-md-8 mb-4">
-          <div className="card shadow-sm border-0">
-            <img 
-              src={event.imageUrl || 'https://via.placeholder.com/800x400'} 
-              className="card-img-top img-detail-main" 
-              alt={event.title}
-            />
-            <div className="card-body p-4">
-              <div className="d-flex justify-content-between align-items-start mb-3">
-                <h2 className="fw-bold text-primary-custom mb-0">{event.title}</h2>
-                <span className="badge bg-secondary-custom fs-6">
-                  {event.Category ? event.Category.name : 'Event'}
-                </span>
-              </div>
-
-              <div className="mb-4 text-muted">
-                <p className="mb-1">
-                  📅 <strong>Date:</strong> {new Date(event.date).toLocaleDateString()} at {new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                </p>
-                <p className="mb-1">
-                  📍 <strong>Location:</strong> {event.location}
-                </p>
-              </div>
-              <h5 className="fw-bold text-secondary-custom">Event Description</h5>
-              <p className="card-text" style={{ whiteSpace: 'pre-line' }}>{event.description}</p>
-            </div>
-          </div>
+        {/* Imagen */}
+        <div className="col-md-6 mb-4">
+          <img src={event.imageUrl} className="img-fluid rounded shadow" alt={event.title} />
         </div>
 
-        <div className="col-md-4">
-          <div className="card shadow border-0 p-4 sticky-top" style={{ top: '20px' }}>
-            <h4 className="fw-bold text-center mb-4 text-primary-custom">Reserve your spot</h4>
-            
-            <div className="mb-3">
-              <label className="form-label text-muted small">Ticket Type</label>
-              <input type="text" className="form-control bg-light" value={event.ticketType} disabled readOnly />
-            </div>
+        {/* Detalles */}
+        <div className="col-md-6">
+          <h2 className="fw-bold text-primary-custom">{event.title}</h2>
+          <p className="text-muted fs-5">📅 {new Date(event.date).toLocaleDateString()} • 📍 {event.location}</p>
+          
+          <div className="my-4">
+            <h4 className="fw-bold text-success">${event.price} <small className="text-muted fs-6">/ ticket</small></h4>
+            <span className="badge bg-secondary-custom me-2">{event.Category?.name}</span>
+            <span className={`badge ${event.availableTickets > 0 ? 'bg-success' : 'bg-danger'}`}>
+              {event.availableTickets > 0 ? `${event.availableTickets} Available` : 'Sold Out'}
+            </span>
+          </div>
 
-            <div className="mb-3">
-              <label className="form-label text-muted small">Price per ticket</label>
-              <div className="fs-3 fw-bold text-secondary-custom">${event.price}</div>
-            </div>
+          <p className="lead" style={{fontSize: '1rem'}}>{event.description}</p>
 
-            <div className="mb-4">
-              <label className="form-label text-muted small">Quantity</label>
-              <select className="form-select form-select-lg" value={quantity} onChange={(e) => setQuantity(e.target.value)}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                  <option key={num} value={num}>{num}</option>
-                ))}
-              </select>
-            </div>
+          <hr />
 
-            <div className="d-grid">
-              <button onClick={handleAddToCart} className="btn btn-accent-custom btn-lg py-3">
+          {/* Selector de Cantidad y Botón */}
+          {event.availableTickets > 0 ? (
+            <div className="d-flex align-items-end gap-3 mt-4">
+              <div style={{maxWidth: '100px'}}>
+                <label className="form-label fw-bold small">Quantity</label>
+                <input 
+                  type="number" 
+                  className="form-control" 
+                  min="1" 
+                  max={Math.min(10, event.availableTickets)} // Máximo 10 o los que queden
+                  value={quantity}
+                  onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value)))}
+                />
+              </div>
+              <button 
+                className="btn btn-primary btn-lg fw-bold flex-grow-1"
+                onClick={addToCart}
+              >
                 Add to Cart 🛒
               </button>
             </div>
-
-            <div className="mt-3 text-center">
-              <small className="text-muted">
-                Available: <strong>{event.availableTickets}</strong>
-              </small>
+          ) : (
+            <div className="alert alert-danger fw-bold text-center">
+              🚫 This event is Sold Out
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
   );
 };
+
 export default EventDetails;

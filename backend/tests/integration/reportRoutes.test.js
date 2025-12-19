@@ -1,6 +1,7 @@
 const request = require("supertest");
 const app = require("../../src/app");
 const db = require("../../src/models");
+const jwt = require("jsonwebtoken");
 
 beforeAll(async () => {
   await db.sequelize.sync({ force: true });
@@ -23,7 +24,7 @@ describe("Report Routes Integration Tests", () => {
       password: "pass",
       role: "admin",
     });
-    const jwt = require("jsonwebtoken");
+
     adminToken = jwt.sign(
       { id: admin.id, role: admin.role },
       process.env.JWT_SECRET
@@ -46,6 +47,7 @@ describe("Report Routes Integration Tests", () => {
     eventId = event.id;
 
     // 3. Setup Tickets (Simulate sales)
+    // Creating 1 row with quantity 2 = 2 tickets sold
     await db.Ticket.create({
       userId: admin.id,
       eventId: event.id,
@@ -62,19 +64,17 @@ describe("Report Routes Integration Tests", () => {
       .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.statusCode).toBe(200);
-    // Check if numbers match our seed data
+    // 200 revenue
     expect(parseFloat(res.body.totalRevenue)).toBe(200);
+    // 2 tickets (sum of quantity)
     expect(parseInt(res.body.totalTickets)).toBe(2);
   });
 
   test("GET /api/reports/sales - Should filter by date", async () => {
-    // Usamos un rango amplio para evitar problemas de zona horaria en los tests
-    // Inicio: Ayer
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - 1);
     const startStr = startDate.toISOString().split("T")[0];
 
-    // Fin: Mañana
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 1);
     const endStr = endDate.toISOString().split("T")[0];
@@ -84,7 +84,10 @@ describe("Report Routes Integration Tests", () => {
       .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBeGreaterThanOrEqual(1); // Debe encontrar al menos la venta que creamos
+
+    // UPDATE: The controller returns { sales: [...] }, not just [...]
+    // So we check res.body.sales.length
+    expect(res.body.sales.length).toBeGreaterThanOrEqual(1);
   });
 
   test("GET /api/reports/attendees/:id - Should list attendees", async () => {
@@ -93,7 +96,9 @@ describe("Report Routes Integration Tests", () => {
       .set("Authorization", `Bearer ${adminToken}`);
 
     expect(res.statusCode).toBe(200);
-    expect(res.body.length).toBe(1);
-    expect(res.body[0].quantity).toBe(2);
+
+    // UPDATE: The controller returns { attendees: [...] }
+    expect(res.body.attendees.length).toBe(1);
+    expect(res.body.attendees[0].quantity).toBe(2);
   });
 });

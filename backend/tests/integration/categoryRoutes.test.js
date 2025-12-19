@@ -60,7 +60,7 @@ describe("Category Routes Coverage Tests", () => {
       .set("Authorization", `Bearer ${adminToken}`)
       .send({});
 
-    expect(res.statusCode).toBe(400); // Cubre la línea de validación
+    expect(res.statusCode).toBe(400);
   });
 
   // 2. READ

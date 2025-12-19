@@ -1,25 +1,21 @@
-import api from "./api";
+import api from "./api"; // <--- Importamos la instancia configurada
 
 const messageService = {
-  // Enviar un mensaje (Público)
   sendMessage: async (data) => {
     const response = await api.post("/messages", data);
     return response.data;
   },
 
-  // Obtener todos los mensajes (Solo Admin)
   getAllMessages: async (page = 1, limit = 10) => {
     const response = await api.get(`/messages?page=${page}&limit=${limit}`);
     return response.data;
   },
 
-  // Cambiar estado (read/new)
   updateStatus: async (id, status) => {
-    const response = await api.put(`/messages/${id}/status`, { status });
+    const response = await api.put(`/messages/${id}`, { status });
     return response.data;
   },
 
-  // Eliminar mensaje
   deleteMessage: async (id) => {
     const response = await api.delete(`/messages/${id}`);
     return response.data;

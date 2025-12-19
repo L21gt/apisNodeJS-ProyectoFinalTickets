@@ -3,7 +3,7 @@ import api from "./api";
 const ticketService = {
   // Comprar boletos
   purchase: async (purchaseData) => {
-    // purchaseData debe ser { eventId, quantity, cardDetails }
+    // purchaseData = { eventId, quantity, cardDetails }
     const response = await api.post("/tickets/purchase", purchaseData);
     return response.data;
   },

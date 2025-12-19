@@ -2,17 +2,20 @@ require("dotenv").config();
 const { faker } = require("@faker-js/faker");
 const db = require("../models");
 
+// CONFIGURACIÓN
 const NUM_USERS = 100;
-const NUM_EVENTS = 80; // 80 Eventos total
+const NUM_EVENTS = 60;
 const NUM_MESSAGES = 30;
 
 async function populate() {
   try {
-    console.log("🌱 Iniciando carga masiva de datos...");
+    console.log("🌱 Iniciando carga de datos GARANTIZADA...");
+
+    // 1. Limpieza
     await db.sequelize.sync({ force: true });
 
-    // 1. Admin
-    await db.User.create({
+    // 2. Admin
+    const admin = await db.User.create({
       firstName: "Super",
       lastName: "Admin",
       email: process.env.ADMIN_EMAIL || "admin@events4u.com",
@@ -21,7 +24,7 @@ async function populate() {
       status: "active",
     });
 
-    // 2. Usuarios
+    // 3. Usuarios
     const usersData = [];
     for (let i = 0; i < NUM_USERS; i++) {
       usersData.push({
@@ -37,7 +40,7 @@ async function populate() {
       individualHooks: true,
     });
 
-    // 3. Categorías
+    // 4. Categorías
     const catNames = [
       "Concerts",
       "Theater",
@@ -52,91 +55,114 @@ async function populate() {
       categories.push(await db.Category.create({ name }));
     }
 
-    // 4. Eventos (50% Pasados, 50% Futuros)
-    console.log(`... Creando ${NUM_EVENTS} eventos equilibrados ...`);
+    // 5. Crear Eventos
     const events = [];
     for (let i = 0; i < NUM_EVENTS; i++) {
-      const isPast = i % 2 === 0; // Pares pasados, impares futuros
-
-      // Fechas: Pasados (hace 1 año a ayer), Futuros (mañana a 1 año)
+      const isPast = i % 2 === 0;
       const date = isPast
         ? faker.date.past({ years: 1 })
         : faker.date.future({ years: 1 });
 
+      let titlePrefix = "";
+      if (i === 0) titlePrefix = "🔥 [SOLD OUT] ";
+      if (i === 1) titlePrefix = "🔙 [HISTORIC] ";
+
       const event = await db.Event.create({
         title:
+          titlePrefix +
           faker.commerce.productAdjective() +
           " " +
           faker.music.genre() +
-          " Show",
+          " Fest",
         description: faker.lorem.paragraph(),
         date: date,
         location: faker.location.city(),
         categoryId:
           categories[Math.floor(Math.random() * categories.length)].id,
-        imageUrl: `https://picsum.photos/seed/${i + 999}/800/400`,
+        imageUrl: `https://picsum.photos/seed/${i + 500}/800/400`,
         ticketType: "General Entry",
-        price: faker.commerce.price({ min: 20, max: 150 }),
-        totalTickets: 500,
-        availableTickets: 500,
+        price: faker.commerce.price({ min: 20, max: 200 }),
+        totalTickets: 300,
+        availableTickets: 300,
       });
       events.push(event);
     }
 
-    // 5. Ventas (Tickets) - GARANTIZAR DATOS PARA EL ADMIN
-    console.log("... Generando historial de tickets para el Admin ...");
+    // 6. GENERAR ASISTENTES (Tickets)
+    console.log("💎 Generando asistentes para TODOS los eventos...");
 
-    const adminUser = await db.User.findOne({
-      where: { email: process.env.ADMIN_EMAIL || "admin@events4u.com" },
-    });
+    for (let i = 0; i < events.length; i++) {
+      const event = events[i];
+      let audienceSize = 0;
+      let audience = [];
 
-    // Hacemos que el admin compre boletos de TODOS los eventos creados
-    for (const event of events) {
-      const qty = faker.number.int({ min: 1, max: 2 });
-
-      // Definir fecha de compra
-      // Si el evento ya pasó, la compra fue antes. Si es futuro, la compra fue reciente.
-      let purchaseDate;
-      if (event.date < new Date()) {
-        purchaseDate = faker.date.recent({ days: 30, refDate: event.date });
+      // Si son los primeros 2 eventos, llenamos masivamente (80 personas)
+      if (i === 0 || i === 1) {
+        audienceSize = 80;
+        audience = createdUsers.slice(0, 80);
       } else {
-        purchaseDate = faker.date.recent({ days: 5 });
+        // Para el resto, garantizamos entre 5 y 15 asistentes
+        audienceSize = faker.number.int({ min: 5, max: 15 });
+        // Seleccionamos usuarios al azar
+        audience = faker.helpers.arrayElements(createdUsers, audienceSize);
       }
 
-      await db.Ticket.create({
-        userId: adminUser.id,
-        eventId: event.id,
-        orderId: faker.string.uuid(),
-        quantity: qty,
-        totalPrice: event.price * qty,
-        status: "valid",
-        createdAt: purchaseDate,
-        updatedAt: purchaseDate,
-      });
+      for (const user of audience) {
+        // Lógica de fecha (Compra antes del evento)
+        let purchaseDate =
+          event.date < new Date()
+            ? faker.date.recent({ days: 60, refDate: event.date })
+            : faker.date.recent({ days: 10 });
 
-      event.availableTickets -= qty;
+        await db.Ticket.create({
+          userId: user.id,
+          eventId: event.id,
+          orderId: faker.string.uuid(),
+          quantity: 1, // 1 boleto por persona para la lista
+          totalPrice: event.price,
+          status: "valid",
+          createdAt: purchaseDate,
+          updatedAt: purchaseDate,
+        });
+        event.availableTickets -= 1;
+      }
       await event.save();
     }
-    console.log(
-      "✅ Tickets generados: El Admin ahora tiene boletos activos y pasados."
-    );
 
-    // 6. Mensajes
-    const messagesData = Array.from({ length: 30 }).map(() => ({
+    // 7. My Tickets para Admin
+    for (const event of events) {
+      if (Math.random() > 0.7) {
+        await db.Ticket.create({
+          userId: admin.id,
+          eventId: event.id,
+          orderId: faker.string.uuid(),
+          quantity: 2,
+          totalPrice: event.price * 2,
+          status: "valid",
+          createdAt: new Date(),
+        });
+      }
+    }
+
+    // 8. Mensajes
+    const messagesData = Array.from({ length: NUM_MESSAGES }).map(() => ({
       name: faker.person.fullName(),
       email: faker.internet.email(),
-      subject: faker.lorem.sentence(3),
-      message: faker.lorem.sentence(10),
+      subject: faker.lorem.sentence(),
+      message: faker.lorem.paragraph(),
       status: Math.random() > 0.5 ? "read" : "new",
-      createdAt: faker.date.recent({ days: 15 }),
+      createdAt: faker.date.recent({ days: 30 }),
     }));
     await db.Message.bulkCreate(messagesData);
 
-    console.log("🚀 ¡DB POBLADA EXITOSAMENTE!");
+    console.log(
+      "🚀 ¡DB LISTA! Ahora CUALQUIER evento que elijas tendrá asistentes."
+    );
     process.exit(0);
   } catch (error) {
     console.error(error);
     process.exit(1);
   }
 }
+
 populate();

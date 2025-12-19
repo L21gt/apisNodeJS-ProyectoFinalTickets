@@ -1,59 +1,45 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useState, useEffect } from 'react';
-import { jwtDecode } from 'jwt-decode';
-import authService from '../services/authService';
+import { createContext, useState, useContext } from 'react';
 
+// 1. Creamos el contexto
 export const AuthContext = createContext();
 
+// 2. Creamos el Provider
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
+  // Inicialización directa (Lazy) para evitar useEffect innecesario
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
 
-  // 1. Definimos las funciones PRIMERO (para que useEffect las encuentre)
-  
-  // Función de Logout
+  const login = (userData, token) => {
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('token', token);
+    setUser(userData);
+  };
+
   const logout = () => {
-    authService.logout();
+    localStorage.removeItem('user');
+    localStorage.removeItem('token');
     setUser(null);
-    setIsAuthenticated(false);
+    window.location.href = '/login';
   };
 
-  // Función de Login
-  const login = async (credentials) => {
-    const data = await authService.login(credentials);
-    const decoded = jwtDecode(data.token);
-    setUser(decoded);
-    setIsAuthenticated(true);
-    return data;
-  };
-
-  // 2. Ejecutamos el efecto DESPUÉS
-  useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const decoded = jwtDecode(token);
-          // Verificar si el token expiró
-          if (decoded.exp * 1000 < Date.now()) {
-            logout();
-          } else {
-            setUser(decoded);
-            setIsAuthenticated(true);
-          }
-        } catch {
-          logout();
-        }
-      }
-      setLoading(false);
-    };
-    checkAuth();
-  }, []);
+  const isAdmin = user?.role === 'admin';
+  
+  // Loading falso fijo para cumplir con la estructura sin causar errores
+  const loading = false;
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated, login, logout, loading }}>
-      {!loading && children}
+    <AuthContext.Provider value={{ user, setUser, login, logout, loading, isAdmin }}>
+      {children}
     </AuthContext.Provider>
   );
 };
+
+// 3. Exportamos el Hook (Esta es la clave para que funcione Navbar)
+export const useAuth = () => {
+  return useContext(AuthContext);
+};
+
+export default AuthContext;

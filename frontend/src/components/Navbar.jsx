@@ -1,9 +1,8 @@
-import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { useContext } from 'react';
-import { AuthContext } from '../context/AuthContext';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const Navbar = () => {
-  const { user, isAuthenticated, logout } = useContext(AuthContext);
+  const { user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -12,69 +11,70 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
+    <nav className="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
       <div className="container">
-        <Link className="navbar-brand fw-bold" to="/">EVENTS4U 🎟️</Link>
+        {/* EL LOGO YA FUNCIONA COMO HOME */}
+        <Link className="navbar-brand fw-bold text-uppercase" to="/">
+          🎟️ Events4U
+        </Link>
         
-        <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <button 
+          className="navbar-toggler" 
+          type="button" 
+          data-bs-toggle="collapse" 
+          data-bs-target="#navbarNav"
+        >
           <span className="navbar-toggler-icon"></span>
         </button>
 
         <div className="collapse navbar-collapse" id="navbarNav">
-          <ul className="navbar-nav ms-auto align-items-center">
+          <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+            {/* ELIMINAMOS EL ENLACE "HOME" REDUNDANTE 
+               Ahora la lista empieza directamente con las opciones de usuario
+            */}
             
-            <li className="nav-item">
-              <NavLink className="nav-link" to="/">Home</NavLink>
-            </li>
+            {user && (
+              <li className="nav-item">
+                <Link className="nav-link" to="/my-tickets">My Tickets</Link>
+              </li>
+            )}
+            {isAdmin && (
+              <li className="nav-item">
+                <Link className="nav-link text-warning" to="/admin">Admin Panel</Link>
+              </li>
+            )}
+          </ul>
 
-            <li className="nav-item">
-              <NavLink className="nav-link" to="/contact">Contact Us</NavLink>
-            </li>
-
-            {/* Cart Link (Visible to all) */}
-            <li className="nav-item">
-              <NavLink className="nav-link position-relative" to="/cart">
-                🛒 Cart
-              </NavLink>
-            </li>
-
-            {!isAuthenticated ? (
+          <div className="d-flex align-items-center gap-3">
+            {!user ? (
               <>
-                <li className="nav-item">
-                  <NavLink className="nav-link" to="/login">Sign In</NavLink>
-                </li>
-                <li className="nav-item">
-                  <NavLink className="nav-link btn btn-accent-custom px-4 ms-2" to="/register">
-                    Register
-                  </NavLink>
-                </li>
+                <Link to="/login" className="btn btn-outline-light btn-sm">Login</Link>
+                <Link to="/register" className="btn btn-primary btn-sm">Sign Up</Link>
               </>
             ) : (
-              <>
-                {/* My Tickets (Logged users) */}
-                <li className="nav-item">
-                  <NavLink className="nav-link" to="/my-tickets">My Tickets</NavLink>
-                </li>
-
-                {user.role === 'admin' && (
-                  <li className="nav-item">
-                    <NavLink className="nav-link text-warning" to="/admin">Admin Panel</NavLink>
+              <div className="dropdown">
+                <button 
+                  className="btn btn-secondary btn-sm dropdown-toggle d-flex align-items-center gap-2" 
+                  type="button" 
+                  data-bs-toggle="dropdown"
+                >
+                  <span>👤 {user.firstName}</span>
+                </button>
+                <ul className="dropdown-menu dropdown-menu-end">
+                  <li><Link className="dropdown-item" to="/profile">My Profile</Link></li>
+                  <li><hr className="dropdown-divider" /></li>
+                  <li>
+                    <button className="dropdown-item text-danger" onClick={handleLogout}>
+                      Logout
+                    </button>
                   </li>
-                )}
-                
-                <li className="nav-item ms-3">
-                  <NavLink to="/profile" className="nav-link text-white fw-bold">
-                    Hello, {user.firstName || (user.role === 'admin' ? 'Admin' : 'User')}
-                  </NavLink>
-                </li>
-                
-                <li className="nav-item">
-                  <button onClick={handleLogout} className="btn btn-link nav-link text-danger">Log Out</button>
-                </li>
-              </>
+                </ul>
+              </div>
             )}
-
-          </ul>
+            <Link to="/cart" className="btn btn-light btn-sm position-relative">
+              🛒
+            </Link>
+          </div>
         </div>
       </div>
     </nav>

@@ -1,17 +1,31 @@
 import axios from "axios";
 
-// Configuración base de Axios
+// Create Axios instance with base configuration
 const api = axios.create({
-  baseURL: "http://localhost:3000/api", // La URL de tu Backend
+  baseURL: "http://localhost:3000/api",
+  headers: {
+    "Content-Type": "application/json",
+  },
 });
 
-// Interceptor: Antes de cada petición, inyectar el token si existe
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+/**
+ * Request Interceptor
+ * Injects the JWT token from localStorage into the Authorization header.
+ */
+api.interceptors.request.use(
+  (config) => {
+    // Retrieves token set by AuthContext
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 export default api;
