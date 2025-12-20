@@ -25,9 +25,6 @@ exports.getAllUsers = async (req, res) => {
       whereClause.status = status;
     }
 
-    // Opcional: Búsqueda por nombre o email (si quisieras agregarlo a futuro)
-    // if (search) { ... }
-
     const { count, rows } = await User.findAndCountAll({
       where: whereClause,
       attributes: { exclude: ["password"] },
@@ -44,7 +41,7 @@ exports.getAllUsers = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al obtener usuarios" });
+    res.status(500).json({ message: "Error getting users" });
   }
 };
 
@@ -59,14 +56,14 @@ exports.updateUser = async (req, res) => {
     const user = await User.findByPk(id);
 
     if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Evitar que un admin se bloquee a sí mismo o se quite permisos
     if (user.id === req.user.id) {
       return res
         .status(400)
-        .json({ message: "No puedes modificar tu propio usuario." });
+        .json({ message: "Not possible to update your own user" });
     }
 
     // Actualizar campos
@@ -75,11 +72,9 @@ exports.updateUser = async (req, res) => {
 
     await user.save();
 
-    res
-      .status(200)
-      .json({ message: "Usuario actualizado correctamente", user });
+    res.status(200).json({ message: "User updated successfully", user });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al actualizar usuario" });
+    res.status(500).json({ message: "Error updating user" });
   }
 };

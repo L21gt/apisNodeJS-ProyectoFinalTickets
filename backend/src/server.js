@@ -9,12 +9,12 @@ const PORT = process.env.PORT || 3000;
 db.sequelize
   .sync({ force: false })
   .then(() => {
-    console.log("Base de datos sincronizada 📦");
+    console.log("Database synced 📦");
 
     app.listen(PORT, () => {
-      console.log(`Servidor corriendo en el puerto ${PORT} 🚀`);
+      console.log(`Server running on port ${PORT} 🚀`);
     });
   })
   .catch((err) => {
-    console.error("Error al sincronizar la base de datos:", err);
+    console.error("Error syncing the database:", err);
   });

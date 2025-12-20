@@ -20,9 +20,7 @@ app.use(express.json());
 
 // Rutas Base
 app.get("/", (req, res) => {
-  res
-    .status(200)
-    .json({ message: "API Events4U funcionando correctamente 🚀" });
+  res.status(200).json({ message: "API Events4U successfully running 🚀" });
 });
 
 // Rutas de la API

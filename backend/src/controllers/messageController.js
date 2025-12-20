@@ -10,10 +10,10 @@ exports.sendMessage = async (req, res) => {
 
     await Message.create({ name, email, subject, message });
 
-    res.status(201).json({ message: "Mensaje enviado correctamente" });
+    res.status(201).json({ message: "Message sent successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al enviar el mensaje" });
+    res.status(500).json({ message: "Error sending message" });
   }
 };
 
@@ -60,15 +60,15 @@ exports.updateMessageStatus = async (req, res) => {
     const { status } = req.body; // 'read' o 'new'
 
     const msg = await Message.findByPk(id);
-    if (!msg) return res.status(404).json({ message: "Mensaje no encontrado" });
+    if (!msg) return res.status(404).json({ message: "Message not found" });
 
     msg.status = status;
     await msg.save();
 
-    res.status(200).json({ message: "Estado actualizado", msg });
+    res.status(200).json({ message: "Message status updated", msg });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al actualizar mensaje" });
+    res.status(500).json({ message: "Error updating message status" });
   }
 };
 
@@ -85,12 +85,12 @@ exports.deleteMessage = async (req, res) => {
 
     // Si no borró nada, significa que el ID no existía
     if (deletedRows === 0) {
-      return res.status(404).json({ message: "Mensaje no encontrado" });
+      return res.status(404).json({ message: "Message not found" });
     }
 
-    res.status(200).json({ message: "Mensaje eliminado" });
+    res.status(200).json({ message: "Message deleted successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al eliminar mensaje" });
+    res.status(500).json({ message: "Error deleting message" });
   }
 };

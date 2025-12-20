@@ -19,10 +19,10 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     imageUrl: {
-      type: DataTypes.STRING, // Aquí guardaremos la URL de Cloudinary
+      type: DataTypes.STRING, // Aquí se guarda la URL de Cloudinary
       allowNull: true,
     },
-    // Gestión de Boletos (Simplificada en el mismo modelo como acordamos)
+    // Gestión de Boletos (Simplificada en el mismo modelo)
     ticketType: {
       type: DataTypes.STRING, // Ej: "General", "VIP"
       allowNull: false,

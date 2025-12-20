@@ -13,7 +13,7 @@ exports.getDashboardStats = async (req, res) => {
     // 2. Total Events (All time)
     const totalEvents = await Event.count();
 
-    // 3. Active Events (FIX: Count events happening in the future)
+    // 3. Active Events (Count events happening in the future)
     const activeEvents = await Event.count({
       where: {
         date: {
@@ -43,7 +43,7 @@ exports.getDashboardStats = async (req, res) => {
     res.json({
       totalUsers,
       totalEvents, // Total historical events
-      activeEvents, // <--- SEND THE NEW CORRECT VALUE
+      activeEvents, // Currently active/future events
       totalRevenue,
       totalTickets: totalTicketsSold,
       recentSales,

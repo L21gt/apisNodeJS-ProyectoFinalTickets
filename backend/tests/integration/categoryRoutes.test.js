@@ -70,7 +70,7 @@ describe("Category Routes Coverage Tests", () => {
     expect(res.body.categories.length).toBeGreaterThan(0);
   });
 
-  // 3. UPDATE (Cubrimos el PUT)
+  // 3. UPDATE
   test("PUT /api/categories/:id - Admin updates category", async () => {
     const res = await request(app)
       .put(`/api/categories/${categoryId}`)
@@ -90,7 +90,7 @@ describe("Category Routes Coverage Tests", () => {
     expect(res.statusCode).toBe(404); // Cubre el caso de error
   });
 
-  // 4. DELETE (Cubrimos el DELETE)
+  // 4. DELETE
   test("DELETE /api/categories/:id - Admin deletes category", async () => {
     const res = await request(app)
       .delete(`/api/categories/${categoryId}`)

@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 const AdminInbox = () => {
   const [messages, setMessages] = useState([]);
-  const [loading, setLoading] = useState(true); // <--- Variable declarada
+  const [loading, setLoading] = useState(true); 
   
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -54,7 +54,6 @@ const AdminInbox = () => {
   const newMessages = messages.filter(m => m.status === 'new');
   const readMessages = messages.filter(m => m.status === 'read');
 
-  // --- USO DE LA VARIABLE LOADING (Esto arregla el error) ---
   if (loading) {
     return (
       <div className="text-center p-5">
@@ -63,7 +62,6 @@ const AdminInbox = () => {
       </div>
     );
   }
-  // ---------------------------------------------------------
 
   return (
     <div className="card shadow-sm border-0">
@@ -94,10 +92,28 @@ const AdminInbox = () => {
                   <td>{msg.name}<br/><small className="fw-normal">{msg.email}</small></td>
                   <td>{msg.subject}</td>
                   <td className="text-truncate" style={{maxWidth: '200px'}}>{msg.message}</td>
-                  <td className="text-end pe-4">
-                    <button onClick={() => toggleStatus(msg)} className="btn btn-sm btn-outline-success me-2">✔</button>
-                    <button onClick={() => handleDelete(msg.id)} className="btn btn-sm btn-outline-danger">🗑️</button>
+                  
+                  {/* --- FLEXBOX FOR NEW MESSAGES --- */}
+                  <td className="pe-4">
+                    <div className="d-flex justify-content-end gap-2">
+                        <button 
+                            onClick={() => toggleStatus(msg)} 
+                            className="btn btn-sm btn-outline-success" 
+                            title="Mark as read"
+                        >
+                            ✔
+                        </button>
+                        <button 
+                            onClick={() => handleDelete(msg.id)} 
+                            className="btn btn-sm btn-outline-danger"
+                            title="Delete"
+                        >
+                            🗑️
+                        </button>
+                    </div>
                   </td>
+                  {/* --------------------------------------- */}
+
                 </tr>
               ))}
 
@@ -111,10 +127,28 @@ const AdminInbox = () => {
                   <td>{msg.name}<br/><small>{msg.email}</small></td>
                   <td>{msg.subject}</td>
                   <td className="text-truncate" style={{maxWidth: '200px'}}>{msg.message}</td>
-                  <td className="text-end pe-4">
-                    <button onClick={() => toggleStatus(msg)} className="btn btn-sm btn-link text-secondary me-2">↩</button>
-                    <button onClick={() => handleDelete(msg.id)} className="btn btn-sm btn-outline-danger">🗑️</button>
+                  
+                  {/* --- FLEXBOX FOR READ MESSAGES --- */}
+                  <td className="pe-4">
+                    <div className="d-flex justify-content-end gap-2">
+                        <button 
+                            onClick={() => toggleStatus(msg)} 
+                            className="btn btn-sm btn-link text-secondary"
+                            title="Mark as unread"
+                        >
+                            ↩
+                        </button>
+                        <button 
+                            onClick={() => handleDelete(msg.id)} 
+                            className="btn btn-sm btn-outline-danger"
+                            title="Delete"
+                        >
+                            🗑️
+                        </button>
+                    </div>
                   </td>
+                  {/* ---------------------------------------- */}
+
                 </tr>
               ))}
 

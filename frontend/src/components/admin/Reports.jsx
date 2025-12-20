@@ -19,7 +19,7 @@ const Reports = () => {
   const [attendeesPage, setAttendeesPage] = useState(1);
   const [attendeesTotalPages, setAttendeesTotalPages] = useState(1);
 
-  // 1. DEFINIR LA FUNCIÓN PRIMERO (Para evitar el error de "access before declaration")
+  // 1. SE DEFINE LA FUNCIÓN PRIMERO
   const fetchSales = async () => {
     try {
       // Usamos el estado actual de la página y fechas

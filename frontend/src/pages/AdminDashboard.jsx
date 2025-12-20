@@ -11,7 +11,7 @@ import Reports from '../components/admin/Reports';
 const Placeholder = ({ title }) => (
   <div className="card p-5 text-center">
     <h2>{title}</h2>
-    <p className="text-muted">Este módulo está en construcción 🚧</p>
+    <p className="text-muted">This module is on construction... 🚧</p>
   </div>
 );
 

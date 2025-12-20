@@ -1,7 +1,7 @@
 import api from "./api";
 
+// Service for fetching report data from the backend API
 const reportService = {
-  // CORRECCIÓN: Renombramos 'getStats' a 'getDashboardStats' para coincidir con el componente
   getDashboardStats: async () => {
     const response = await api.get("/reports/stats");
     return response.data;

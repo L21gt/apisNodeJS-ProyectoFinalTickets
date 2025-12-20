@@ -17,14 +17,12 @@ exports.purchaseTickets = async (req, res) => {
 
     // 1. Validaciones básicas
     if (!eventId || !quantity || quantity < 1) {
-      return res.status(400).json({ message: "Datos de compra inválidos" });
+      return res.status(400).json({ message: "Invalid purchase data" });
     }
 
     // 2. Simulación de Pago (Requisito acordado)
     if (!cardDetails || !cardDetails.number) {
-      return res
-        .status(400)
-        .json({ message: "Se requiere información de pago" });
+      return res.status(400).json({ message: "Payment information required" });
     }
     // Aquí iría la llamada a Stripe/PayPal. Asumimos éxito.
 
@@ -33,7 +31,7 @@ exports.purchaseTickets = async (req, res) => {
 
     if (!event) {
       await t.rollback();
-      return res.status(404).json({ message: "Evento no encontrado" });
+      return res.status(404).json({ message: "Event not found" });
     }
 
     // 4. Verificar disponibilidad
@@ -41,7 +39,7 @@ exports.purchaseTickets = async (req, res) => {
       await t.rollback();
       return res
         .status(400)
-        .json({ message: "No hay suficientes boletos disponibles" });
+        .json({ message: "Insufficient tickets available" });
     }
 
     // 5. Crear los Tickets
@@ -68,7 +66,7 @@ exports.purchaseTickets = async (req, res) => {
     await t.commit();
 
     res.status(201).json({
-      message: "Compra realizada con éxito",
+      message: "Purchase successful",
       ticket: newTicket,
       remaining: event.availableTickets,
     });
@@ -76,7 +74,7 @@ exports.purchaseTickets = async (req, res) => {
     // Si algo falla, deshacer todo (Rollback)
     await t.rollback();
     console.error(error);
-    res.status(500).json({ message: "Error al procesar la compra" });
+    res.status(500).json({ message: "Error processing purchase" });
   }
 };
 

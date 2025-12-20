@@ -10,7 +10,7 @@ exports.getAllCategories = async (req, res) => {
     res.status(200).json({ categories });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al obtener categorías" });
+    res.status(500).json({ message: "Error getting categories" });
   }
 };
 
@@ -21,22 +21,19 @@ exports.createCategory = async (req, res) => {
   try {
     const { name } = req.body;
     if (!name)
-      return res.status(400).json({ message: "El nombre es obligatorio" });
+      return res.status(400).json({ message: "Category name is required" });
 
     // Validar duplicados ANTES de intentar crear
-    // (Aunque la BD tiene restricción unique, es más limpio validarlo aquí)
     const existingCat = await Category.findOne({ where: { name } });
     if (existingCat) {
-      return res
-        .status(400)
-        .json({ message: "Ya existe una categoría con ese nombre" });
+      return res.status(400).json({ message: "This category already exists" });
     }
 
     const category = await Category.create({ name });
-    res.status(201).json({ message: "Categoría creada", category });
+    res.status(201).json({ message: "Category created", category });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error en el servidor" });
+    res.status(500).json({ message: "Error creating category" });
   }
 };
 
@@ -50,24 +47,22 @@ exports.updateCategory = async (req, res) => {
 
     const category = await Category.findByPk(id);
     if (!category) {
-      return res.status(404).json({ message: "Categoría no encontrada" });
+      return res.status(404).json({ message: "Category not found" });
     }
 
     // Validar si el NUEVO nombre ya existe (y no es la misma categoría que estamos editando)
     const existingCat = await Category.findOne({ where: { name } });
     if (existingCat && existingCat.id !== parseInt(id)) {
-      return res
-        .status(400)
-        .json({ message: "Ya existe otra categoría con ese nombre" });
+      return res.status(400).json({ message: "This category already exists" });
     }
 
     category.name = name;
     await category.save();
 
-    res.status(200).json({ message: "Categoría actualizada", category });
+    res.status(200).json({ message: "Category updated", category });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error en el servidor" });
+    res.status(500).json({ message: "Error updating category" });
   }
 };
 
@@ -83,12 +78,12 @@ exports.deleteCategory = async (req, res) => {
     const deleted = await Category.destroy({ where: { id } });
 
     if (!deleted) {
-      return res.status(404).json({ message: "Categoría no encontrada" });
+      return res.status(404).json({ message: "Category not found" });
     }
 
-    res.status(200).json({ message: "Categoría eliminada" });
+    res.status(200).json({ message: "Category deleted" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al eliminar categoría" });
+    res.status(500).json({ message: "Error deleting category" });
   }
 };

@@ -29,10 +29,7 @@ const Navbar = () => {
 
         <div className="collapse navbar-collapse" id="navbarNav">
           <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-            {/* ELIMINAMOS EL ENLACE "HOME" REDUNDANTE 
-               Ahora la lista empieza directamente con las opciones de usuario
-            */}
-            
+                        
             {user && (
               <li className="nav-item">
                 <Link className="nav-link" to="/my-tickets">My Tickets</Link>

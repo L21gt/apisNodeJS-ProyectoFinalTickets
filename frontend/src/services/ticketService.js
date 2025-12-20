@@ -8,7 +8,7 @@ const ticketService = {
     return response.data;
   },
 
-  // Obtener mis boletos (lo usaremos en el siguiente paso)
+  // Obtener mis boletos
   getMyTickets: async (type = "upcoming", page = 1) => {
     const response = await api.get(
       `/tickets/my-tickets?type=${type}&page=${page}&limit=5`

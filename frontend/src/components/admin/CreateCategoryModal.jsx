@@ -21,11 +21,11 @@ const CreateCategoryModal = ({ show, onClose, onCategorySaved, categoryToEdit })
       if (categoryToEdit) {
         // MODO EDICIÓN
         await categoryService.update(categoryToEdit.id, data);
-        toast.success('Categoría actualizada exitosamente');
+        toast.success('Category updated successfully');
       } else {
         // MODO CREACIÓN
         await categoryService.create(data);
-        toast.success('Categoría creada exitosamente');
+        toast.success('Category created successfully');
       }
       
       onCategorySaved(); // Avisar al padre para recargar la tabla
@@ -34,7 +34,7 @@ const CreateCategoryModal = ({ show, onClose, onCategorySaved, categoryToEdit })
       console.error(error);
       // Si el backend envía un mensaje específico (ej. "Ya existe..."), úsalo.
       // Si no, usa el mensaje genérico.
-      const serverMessage = error.response?.data?.message || 'Error al guardar categoría';
+      const serverMessage = error.response?.data?.message || 'Error saving category';
       toast.error(serverMessage);
     }
   };

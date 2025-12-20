@@ -54,9 +54,7 @@ const Profile = () => {
         dataToSend.newPassword = formData.newPassword;
       }
 
-      // --- CORRECCIÓN AQUÍ ---
-      // Eliminamos 'const updatedUser =' porque no lo usábamos.
-      // Solo esperamos a que la operación termine.
+      // Esperar a que la operación termine.
       await userService.update(user.id, dataToSend);
       // -----------------------
 

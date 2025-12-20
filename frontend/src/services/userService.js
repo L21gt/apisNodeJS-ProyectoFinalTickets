@@ -1,4 +1,4 @@
-import api from "./api"; // <--- Importamos la instancia configurada
+import api from "./api";
 
 const userService = {
   getAll: async (page = 1, limit = 10, role = "", status = "") => {

@@ -14,7 +14,7 @@ const Footer = () => {
           </div>
           
           <div className="col-md-6 text-md-end">
-            <h6 className="fw-bold mb-3">Legal & Support</h6>
+            <h5 className="fw-bold mb-3">Legal & Support</h5>
             <ul className="list-unstyled d-inline-flex gap-3">
               <li>
                 <Link to="/terms" className="text-white text-decoration-none opacity-75 hover-opacity-100">

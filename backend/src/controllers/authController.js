@@ -15,7 +15,7 @@ exports.register = async (req, res) => {
     if (existingUser) {
       return res
         .status(400)
-        .json({ message: "El correo electrónico ya está registrado." });
+        .json({ message: "Email address already registered." });
     }
 
     // 2. Crear usuario (El hook del modelo encriptará el password)
@@ -31,7 +31,7 @@ exports.register = async (req, res) => {
 
     // 3. Responder (Excluyendo el password de la respuesta por seguridad)
     res.status(201).json({
-      message: "Usuario registrado exitosamente",
+      message: "User registered successfully",
       user: {
         id: newUser.id,
         email: newUser.email,
@@ -42,7 +42,7 @@ exports.register = async (req, res) => {
     console.error(error);
     res
       .status(500)
-      .json({ message: "Error en el servidor al registrar usuario" });
+      .json({ message: "Error in the server while registering user" });
   }
 };
 
@@ -58,20 +58,20 @@ exports.login = async (req, res) => {
     // 1. Buscar usuario por email
     const user = await User.findOne({ where: { email } });
     if (!user) {
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // 2. Verificar estado (Si está bloqueado no entra)
     if (user.status === "blocked") {
       return res
         .status(403)
-        .json({ message: "Tu cuenta ha sido bloqueada. Contacta al soporte." });
+        .json({ message: "Your account has been blocked. Contact support." });
     }
 
     // 3. Comparar contraseñas (Usando el método que definimos en el Modelo)
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Credenciales inválidas" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // 4. Generar Token JWT
@@ -83,7 +83,7 @@ exports.login = async (req, res) => {
     );
 
     res.status(200).json({
-      message: "Login exitoso",
+      message: "Login successful",
       token,
       user: {
         id: user.id,
@@ -94,7 +94,7 @@ exports.login = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error en el servidor al iniciar sesión" });
+    res.status(500).json({ message: "Error in the server while logging in" });
   }
 };
 
@@ -111,23 +111,21 @@ exports.updateProfile = async (req, res) => {
     const user = await User.findByPk(userId);
 
     if (!user) {
-      return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(404).json({ message: "User not found" });
     }
 
     // 1. Si quiere cambiar contraseña, verificar la actual primero
     if (newPassword) {
       if (!currentPassword) {
-        return res
-          .status(400)
-          .json({
-            message: "Debes ingresar tu contraseña actual para cambiarla",
-          });
+        return res.status(400).json({
+          message: "You must enter your current password to change it",
+        });
       }
       const isMatch = await user.comparePassword(currentPassword);
       if (!isMatch) {
         return res
           .status(401)
-          .json({ message: "La contraseña actual es incorrecta" });
+          .json({ message: "Current password is incorrect" });
       }
       user.password = newPassword; // El hook del modelo la encriptará
     }
@@ -140,7 +138,7 @@ exports.updateProfile = async (req, res) => {
 
     // Devolver usuario actualizado (sin password)
     res.status(200).json({
-      message: "Perfil actualizado correctamente",
+      message: "Profile updated successfully",
       user: {
         id: user.id,
         firstName: user.firstName,
@@ -151,6 +149,6 @@ exports.updateProfile = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al actualizar perfil" });
+    res.status(500).json({ message: "Error updating profile" });
   }
 };

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // <--- Usamos el Hook correcto
+import { useAuth } from '../context/AuthContext'; 
 import ticketService from '../services/ticketService';
 import { toast } from 'react-toastify';
 
@@ -56,7 +56,7 @@ const Checkout = () => {
 
     try {
       // Procesamos cada ítem del carrito individualmente
-      // (Tu backend procesa una compra a la vez)
+      // backend procesa una compra a la vez
       for (const item of cart) {
         await ticketService.purchase({
           eventId: item.eventId,

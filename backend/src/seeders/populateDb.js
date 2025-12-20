@@ -155,9 +155,7 @@ async function populate() {
     }));
     await db.Message.bulkCreate(messagesData);
 
-    console.log(
-      "🚀 ¡DB LISTA! Ahora CUALQUIER evento que elijas tendrá asistentes."
-    );
+    console.log("🚀 ¡DB LISTA! Ahora tienes la informacion que necesitas.");
     process.exit(0);
   } catch (error) {
     console.error(error);

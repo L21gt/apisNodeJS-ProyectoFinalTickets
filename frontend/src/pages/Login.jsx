@@ -26,10 +26,9 @@ const Login = () => {
       // 1. Enviamos credenciales al Backend
       const response = await authService.login(formData);
       
-      // 2. CORRECCIÓN CRÍTICA:
-      // Usamos los datos que devuelve el servidor (response.user), 
+      // 2. Usa los datos que devuelve el servidor (response.user), 
       // NO los datos del formulario (formData).
-      // El servidor es el que sabe tu rol, tu id y tu nombre.
+      // El servidor es el que sabe el rol, tu id y tu nombre.
       if (response && response.token && response.user) {
         login(response.user, response.token); 
         toast.success(`Welcome back, ${response.user.firstName}! 👋`);

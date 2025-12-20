@@ -1,5 +1,5 @@
 :root {
-  /* === PALETA DE COLORES (Basada en tu imagen) === */
+  /* === PALETA DE COLORES  === */
   --color-yale-blue: #1B4079;    /* Primario: Azul Profundo */
   --color-air-force: #4D7C8A;    /* Secundario: Azul Grisáceo */
   --color-cambridge: #7F9C96;    /* Acento 1: Verde Azulado */
@@ -69,7 +69,6 @@ a:hover {
 }
 
 /* === CLASES DE UTILIDAD PERSONALIZADAS === */
-/* Úsalas para colorear textos y fondos sin escribir CSS nuevo */
 
 /* Textos */
 .text-primary-custom { color: var(--primary-color) !important; }

@@ -8,7 +8,7 @@ const { Op } = require("sequelize");
  * (Convierte el archivo en memoria a un stream que Cloudinary entienda)
  */
 const uploadToCloudinary = (buffer) => {
-  // TRUCO PARA TESTS: Si es test, devuelve URL falsa y salta Cloudinary
+  // Si es test, devuelve URL falsa y salta Cloudinary
   if (process.env.NODE_ENV === "test") {
     return Promise.resolve({
       secure_url: "http://res.cloudinary.com/test/image.png",
@@ -38,9 +38,7 @@ exports.createEvent = async (req, res) => {
   try {
     // 1. Validar que venga una imagen
     if (!req.file) {
-      return res
-        .status(400)
-        .json({ message: "La imagen del evento es obligatoria." });
+      return res.status(400).json({ message: "Event image is required." });
     }
 
     // 2. Subir imagen a Cloudinary
@@ -74,12 +72,12 @@ exports.createEvent = async (req, res) => {
     });
 
     res.status(201).json({
-      message: "Evento creado exitosamente",
+      message: "Event created successfully",
       event: newEvent,
     });
   } catch (error) {
-    console.error("Error al crear evento:", error);
-    res.status(500).json({ message: "Error en el servidor al crear evento" });
+    console.error("Error creating event:", error);
+    res.status(500).json({ message: "Error creating event" });
   }
 };
 
@@ -134,7 +132,7 @@ exports.getAllEvents = async (req, res) => {
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al obtener eventos" });
+    res.status(500).json({ message: "Error getting all events" });
   }
 };
 
@@ -150,13 +148,13 @@ exports.getEventById = async (req, res) => {
     });
 
     if (!event) {
-      return res.status(404).json({ message: "Evento no encontrado" });
+      return res.status(404).json({ message: "Event not found" });
     }
 
     res.status(200).json(event);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Error al obtener evento" });
+    res.status(500).json({ message: "Error getting event" });
   }
 };
 

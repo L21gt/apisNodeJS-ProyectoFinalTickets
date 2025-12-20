@@ -85,7 +85,7 @@ describe("Report Routes Integration Tests", () => {
 
     expect(res.statusCode).toBe(200);
 
-    // UPDATE: The controller returns { sales: [...] }, not just [...]
+    // The controller returns { sales: [...] }, not just [...]
     // So we check res.body.sales.length
     expect(res.body.sales.length).toBeGreaterThanOrEqual(1);
   });
@@ -97,7 +97,7 @@ describe("Report Routes Integration Tests", () => {
 
     expect(res.statusCode).toBe(200);
 
-    // UPDATE: The controller returns { attendees: [...] }
+    // The controller returns { attendees: [...] }
     expect(res.body.attendees.length).toBe(1);
     expect(res.body.attendees[0].quantity).toBe(2);
   });

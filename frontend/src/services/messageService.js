@@ -1,4 +1,4 @@
-import api from "./api"; // <--- Importamos la instancia configurada
+import api from "./api";
 
 const messageService = {
   sendMessage: async (data) => {

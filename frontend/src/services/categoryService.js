@@ -19,9 +19,7 @@ const categoryService = {
     return response.data;
   },
 
-  // Eliminar categoría (Opcional, pero útil)
-  // Nota: Asegúrate de tener este endpoint en backend si quieres usarlo,
-  // si no lo creamos, podemos omitir este botón por ahora.
+  // Eliminar categoría
   delete: async (id) => {
     const response = await api.delete(`/categories/${id}`);
     return response.data;

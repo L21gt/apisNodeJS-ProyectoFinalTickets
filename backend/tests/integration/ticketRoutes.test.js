@@ -17,18 +17,9 @@ beforeAll(async () => {
     await db.User.destroy({ where: {} });
     await db.Category.destroy({ where: {} });
   } catch (error) {
-    console.error("Error en limpieza de DB:", error);
+    console.error("Error cleaning the Database:", error);
   }
 });
-
-// afterAll(async () => {
-//   // Intentamos cerrar la conexión limpiamente
-//   try {
-//     db.sequelize.close();
-//   } catch (error) {
-//     // Si falla al cerrar, ignoramos porque --forceExit se encargará
-//   }
-// });
 
 describe("Ticket Routes Coverage Tests", () => {
   let userToken;
@@ -77,7 +68,7 @@ describe("Ticket Routes Coverage Tests", () => {
       });
 
     expect(res.statusCode).toBe(201);
-    expect(res.body.message).toContain("con éxito");
+    expect(res.body.message).toContain("successful");
   });
 
   test("POST /purchase - Invalid Data (400)", async () => {

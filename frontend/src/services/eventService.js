@@ -48,7 +48,7 @@ const eventService = {
     return response.data;
   },
 
-  // Eliminar evento (lo usaremos después)
+  // Eliminar evento
   delete: async (id) => {
     const response = await api.delete(`/events/${id}`);
     return response.data;

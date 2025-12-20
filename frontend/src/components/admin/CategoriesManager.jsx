@@ -20,7 +20,7 @@ const CategoriesManager = () => {
         setLoading(false);
       } catch (error) {
         console.error(error);
-        toast.error('Error al cargar categorías');
+        toast.error('Error loading categories');
         setLoading(false);
       }
     };
@@ -66,7 +66,7 @@ const CategoriesManager = () => {
       
       <div className="card-body p-0">
         {loading ? (
-          <div className="p-4 text-center">Cargando...</div>
+          <div className="p-4 text-center">Loading...</div>
         ) : (
           <div className="table-responsive">
             <table className="table table-hover align-middle mb-0">
@@ -90,7 +90,7 @@ const CategoriesManager = () => {
                         <button 
                           onClick={() => handleEdit(cat)}
                           className="btn btn-sm btn-outline-primary me-2" 
-                          title="Editar nombre"
+                          title="Edit category name"
                         >
                           ✏️
                         </button>
@@ -98,7 +98,7 @@ const CategoriesManager = () => {
                         <button 
                           onClick={() => handleDelete(cat.id)}
                           className="btn btn-sm btn-outline-danger" 
-                          title="Eliminar categoría"
+                          title="Delete category"
                         >
                           🗑️
                         </button>

@@ -22,7 +22,7 @@ function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <div className="d-flex flex-column min-vh-100"> {/* TRUCO: Contenedor Flex */}
+        <div className="d-flex flex-column min-vh-100"> {/* Contenedor Flex */}
           <ToastContainer position="top-right" autoClose={3000} />
           <Navbar />
           
@@ -46,7 +46,7 @@ function App() {
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               
-              <Route path="*" element={<h1>404 - Página no encontrada</h1>} />
+              <Route path="*" element={<h1>404 - Page not found</h1>} />
             </Routes>
           </div>
 

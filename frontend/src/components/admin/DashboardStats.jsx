@@ -32,7 +32,7 @@ const DashboardStats = () => {
     const fetchStats = async () => {
       try {
         const data = await reportService.getDashboardStats();
-        // FIX 1: Merge new data with previous state to prevent 'recentSales' from becoming undefined
+        // Merge new data with previous state to prevent 'recentSales' from becoming undefined
         setStats(prevStats => ({
             ...prevStats, 
             ...data
@@ -40,7 +40,7 @@ const DashboardStats = () => {
         setLoading(false);
       } catch (error) {
         console.error(error);
-        // FIX 2: Translate error message to English
+        // Translate error message to English
         toast.error('Error loading statistics');
         setLoading(false);
       }
@@ -48,7 +48,7 @@ const DashboardStats = () => {
     fetchStats();
   }, []);
 
-  // FIX 3: Translate loading text
+  // Translate loading text
   if (loading) return <div className="text-center p-5">Loading dashboard...</div>;
 
   return (
@@ -77,7 +77,7 @@ const DashboardStats = () => {
                 </tr>
               </thead>
               <tbody>
-                {/* FIX 4: Use optional chaining (?.) to prevent crash if recentSales is null */}
+                {/* Use optional chaining (?.) to prevent crash if recentSales is null */}
                 {stats.recentSales?.length > 0 ? (
                   stats.recentSales.map(sale => (
                     <tr key={sale.id}>
