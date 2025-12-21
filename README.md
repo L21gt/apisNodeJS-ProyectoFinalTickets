@@ -4,6 +4,10 @@ Universidad Galileo - Tecnico desarrollo fullstack
 Proyecto final 4to semestre  
 Cursos Node JS avanzado, Proyecto de aplicacion JavaScript y Testing en el desarrollo
 
+VIDEOS DE DEMOSTRACION DEL PROYECTO EN GOOGLE DRIVE:
+Backend: https://drive.google.com/file/d/1tNqDyF4Nyyycp7bj1ffg3ro0x8l6xCxw/view?usp=drive_link
+Frontend: https://drive.google.com/file/d/12p1t2sprH_UyEMNmbRWDdzM9Qq03DmUg/view?usp=drive_link
+
 # EVENTS4U - Plataforma de Gestión de Eventos y Boletos 🎟️
 
 Proyecto final para el curso de Técnico en Desarrollo Fullstack y Testing.
